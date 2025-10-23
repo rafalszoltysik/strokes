@@ -1,0 +1,61 @@
+{
+  "basic_distributions": {
+    "stroke_distribution": {
+      "stroke_rate": 4.87279843444227,
+      "imbalance_level": "high",
+      "conclusion": "Wysoki poziom niezbalansowania klas (4.9% udarów)"
+    },
+    "age_distribution": {
+      "mean_age": 43.226614481409,
+      "age_range": "0.1-82.0",
+      "conclusion": "Średni wiek: 43.2 lat, zakres: 0.1-82.0"
+    },
+    "bmi_distribution": {
+      "mean_bmi": 28.875234833659494,
+      "bmi_range": "10.3-97.6",
+      "conclusion": "Średnie BMI: 28.9, zakres: 10.3-97.6"
+    },
+    "glucose_distribution": {
+      "mean_glucose": 106.1476771037182,
+      "glucose_range": "55.1-271.7",
+      "conclusion": "Średni poziom glukozy: 106.1 mg/dL"
+    }
+  },
+  "stroke_relationships": {
+    "age_stroke": {
+      "mean_age_no_stroke": 41.971544949598844,
+      "mean_age_stroke": 67.72819277108434,
+      "age_difference": 25.756647821485494,
+      "conclusion": "Pacjenci z udarem są średnio o 25.8 lat starsi"
+    },
+    "bmi_stroke": {
+      "mean_bmi_no_stroke": 28.80571898786258,
+      "mean_bmi_stroke": 30.232329317269077,
+      "bmi_difference": 1.426610329406497,
+      "conclusion": "Pacjenci z udarem mają średnio o 1.4 wyższe BMI"
+    },
+    "glucose_stroke": {
+      "mean_glucose_no_stroke": 104.79551326887471,
+      "mean_glucose_stroke": 132.54473895582328,
+      "glucose_difference": 27.749225686948563,
+      "conclusion": "Pacjenci z udarem mają średnio o 27.7 mg/dL wyższy poziom glukozy"
+    },
+    "hypertension_stroke": {
+      "hypertension_stroke_rate": 13.253012048192772,
+      "conclusion": "Wśród pacjentów z nadciśnieniem 13.3% miało udar"
+    }
+  },
+  "correlation_analysis": {
+    "top_correlations": {
+      "stroke": 1.0,
+      "age": 0.24525734617097422,
+      "heart_disease": 0.13491399696869258,
+      "avg_glucose_level": 0.13194544082570953,
+      "hypertension": 0.12790382346648013,
+      "bmi": 0.03981202196491256
+    },
+    "strongest_predictor": "age",
+    "strongest_correlation": 0.24525734617097422,
+    "conclusion": "Najsilniejszy predyktor udaru: age (korelacja: 0.245)"
+  }
+}

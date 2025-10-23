@@ -1,0 +1,17 @@
+=== RAPORT WNIOSKÓW Z ANALIZY WIZUALIZACJI ===
+
+=== BASIC DISTRIBUTIONS ===
+stroke_distribution: Wysoki poziom niezbalansowania klas (4.9% udarów)
+age_distribution: Średni wiek: 43.2 lat, zakres: 0.1-82.0
+bmi_distribution: Średnie BMI: 28.9, zakres: 10.3-97.6
+glucose_distribution: Średni poziom glukozy: 106.1 mg/dL
+
+=== STROKE RELATIONSHIPS ===
+age_stroke: Pacjenci z udarem są średnio o 25.8 lat starsi
+bmi_stroke: Pacjenci z udarem mają średnio o 1.4 wyższe BMI
+glucose_stroke: Pacjenci z udarem mają średnio o 27.7 mg/dL wyższy poziom glukozy
+hypertension_stroke: Wśród pacjentów z nadciśnieniem 13.3% miało udar
+
+=== CORRELATION ANALYSIS ===
+Najsilniejszy predyktor udaru: age (korelacja: 0.245)
+

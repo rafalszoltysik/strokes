@@ -1,0 +1,160 @@
+{
+  "data_quality": {
+    "zero_issues": {},
+    "invalid_ranges": {
+      "age": {
+        "min": 0,
+        "max": 120
+      },
+      "bmi": {
+        "min": 10,
+        "max": 100
+      },
+      "avg_glucose_level": {
+        "min": 50,
+        "max": 600
+      }
+    }
+  },
+  "missing_values": {},
+  "data_retention": {
+    "initial_rows": 5110,
+    "final_rows": 5110,
+    "removed_rows": 0,
+    "retention_rate": 100.0
+  },
+  "validation": {
+    "total_rows": 5110,
+    "missing_values": {
+      "id": {
+        "count": "0",
+        "percentage": 0.0
+      },
+      "gender": {
+        "count": "0",
+        "percentage": 0.0
+      },
+      "age": {
+        "count": "0",
+        "percentage": 0.0
+      },
+      "hypertension": {
+        "count": "0",
+        "percentage": 0.0
+      },
+      "heart_disease": {
+        "count": "0",
+        "percentage": 0.0
+      },
+      "ever_married": {
+        "count": "0",
+        "percentage": 0.0
+      },
+      "Residence_type": {
+        "count": "0",
+        "percentage": 0.0
+      },
+      "avg_glucose_level": {
+        "count": "0",
+        "percentage": 0.0
+      },
+      "bmi": {
+        "count": "0",
+        "percentage": 0.0
+      },
+      "stroke": {
+        "count": "0",
+        "percentage": 0.0
+      },
+      "work_type_Govt_job": {
+        "count": "0",
+        "percentage": 0.0
+      },
+      "work_type_Never_worked": {
+        "count": "0",
+        "percentage": 0.0
+      },
+      "work_type_Private": {
+        "count": "0",
+        "percentage": 0.0
+      },
+      "work_type_Self-employed": {
+        "count": "0",
+        "percentage": 0.0
+      },
+      "work_type_children": {
+        "count": "0",
+        "percentage": 0.0
+      },
+      "smoking_status_Unknown": {
+        "count": "0",
+        "percentage": 0.0
+      },
+      "smoking_status_formerly smoked": {
+        "count": "0",
+        "percentage": 0.0
+      },
+      "smoking_status_never smoked": {
+        "count": "0",
+        "percentage": 0.0
+      },
+      "smoking_status_smokes": {
+        "count": "0",
+        "percentage": 0.0
+      }
+    },
+    "data_types": {
+      "id": "int64",
+      "gender": "int64",
+      "age": "float64",
+      "hypertension": "int64",
+      "heart_disease": "int64",
+      "ever_married": "int64",
+      "Residence_type": "int64",
+      "avg_glucose_level": "float64",
+      "bmi": "float64",
+      "stroke": "int64",
+      "work_type_Govt_job": "bool",
+      "work_type_Never_worked": "bool",
+      "work_type_Private": "bool",
+      "work_type_Self-employed": "bool",
+      "work_type_children": "bool",
+      "smoking_status_Unknown": "bool",
+      "smoking_status_formerly smoked": "bool",
+      "smoking_status_never smoked": "bool",
+      "smoking_status_smokes": "bool"
+    },
+    "value_ranges": {
+      "age": {
+        "min": 0.08,
+        "max": 82.0,
+        "mean": 43.226614481409,
+        "median": 45.0
+      },
+      "bmi": {
+        "min": 10.3,
+        "max": 97.6,
+        "mean": 28.875234833659494,
+        "median": 28.3
+      },
+      "avg_glucose_level": {
+        "min": 55.12,
+        "max": 271.74,
+        "mean": 106.1476771037182,
+        "median": 91.88499999999999
+      }
+    },
+    "categorical_values": {
+      "gender": {
+        "unique_count": 3,
+        "values": [
+          "1",
+          "0",
+          "2"
+        ]
+      }
+    },
+    "warnings": [],
+    "errors": []
+  }
+}

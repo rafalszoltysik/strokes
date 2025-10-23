@@ -1,0 +1,80 @@
+================================================================================
+STROKE PREDICTION SYSTEM - RAPORT KOŃCOWY
+================================================================================
+Data wygenerowania: 2025-10-23 21:12:26
+================================================================================
+
+=== PODSUMOWANIE SYSTEMU ===
+System do predykcji udarów mózgu
+Zawiera: pre-processing, wizualizację, modelowanie, monitoring
+Oczyszczony zbiór: data/processed/clean_dataset.csv
+
+=== WYNIKI MODELI ===
+Random Forest:
+  - Accuracy: 0.9501
+  - AUC Score: 0.7883
+  - Precision: 0.9217
+  - Recall: 0.9501
+  - F1-Score: 0.9286
+Gradient Boosting:
+  - Accuracy: 0.9481
+  - AUC Score: 0.8328
+  - Precision: 0.9044
+  - Recall: 0.9481
+  - F1-Score: 0.9258
+Logistic Regression:
+  - Accuracy: 0.9521
+  - AUC Score: 0.8424
+  - Precision: 0.9544
+  - Recall: 0.9521
+  - F1-Score: 0.9296
+SVM:
+  - Accuracy: 0.9511
+  - AUC Score: 0.6079
+  - Precision: 0.9045
+  - Recall: 0.9511
+  - F1-Score: 0.9272
+
+Najlepszy model: Logistic Regression
+
+=== INTERPRETACJA METRYK ===
+Accuracy: Ogólna dokładność modelu
+AUC Score: Zdolność do rozróżniania między klasami (0.5=losowy, 0.8+=bardzo dobry)
+Precision: Ile z przewidzianych udarów to prawdziwe udary
+Recall: Ile z prawdziwych udarów zostało wykrytych
+F1-Score: Średnia harmoniczna precision i recall
+
+=== OPTYMALIZACJE MODELU ===
+Optymalny próg klasyfikacji: 0.8837
+Kalibracja modelu: ZASTOSOWANA (zmniejszenie halucynacji)
+Zarządzanie niezbalansowaniem: ULEPSZONE (SMOTETomek/SMOTE/UnderSampling)
+
+=== WNIOSKI Z ANALIZY ===
+BASIC DISTRIBUTIONS:
+  - Wysoki poziom niezbalansowania klas (4.9% udarów)
+  - Średni wiek: 43.2 lat, zakres: 0.1-82.0
+  - Średnie BMI: 28.9, zakres: 10.3-97.6
+  - Średni poziom glukozy: 106.1 mg/dL
+
+STROKE RELATIONSHIPS:
+  - Pacjenci z udarem są średnio o 25.8 lat starsi
+  - Pacjenci z udarem mają średnio o 2.1 wyższe BMI
+  - Pacjenci z udarem mają średnio o 15.3 mg/dL wyższy poziom glukozy
+  - Wśród pacjentów z nadciśnieniem 15.2% miało udar
+
+=== MONITORING MODELU ===
+Accuracy: 0.7035
+Precision: 0.9446
+Recall: 0.7035
+F1-Score: 0.7878
+Drift danych: WYKRYTO (NORMALNY - test vs train)
+  - Max mean drift: 36.79
+  - Max std drift: 1.28
+  - Uwaga: To normalne porównanie test vs train - nie wymaga uwagi
+  - W produkcji porównywalibyśmy nowe dane vs historyczne
+Halucynacje: WYKRYTO
+  - Ekstremalnie wysokie pewności: 0
+  - Ekstremalnie niskie pewności: 484
+  - Wariancja pewności: 0.1071
+
+================================================================================

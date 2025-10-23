@@ -1,0 +1,88 @@
+{
+  "model_name": "StrokePredictor",
+  "timestamp": "2025-10-23T21:12:25.156013",
+  "current_metrics": {
+    "accuracy": 0.7035225048923679,
+    "precision": 0.944604479971552,
+    "recall": 0.7035225048923679,
+    "f1_score": 0.7877917123625464,
+    "auc_score": 0.8464711934156378,
+    "timestamp": "2025-10-23T21:12:25.156002"
+  },
+  "data_drift": {
+    "mean_drift": [
+      1.033115387475539,
+      1.054506943412826,
+      0.9770038725059836,
+      1.0038300928041002,
+      1.186712317945425,
+      0.17889254266441817,
+      1.074007846007008,
+      1.2468206232156946,
+      0.4268857906868398,
+      4.766087584419755,
+      0.030985267853665024,
+      1.2800505661642376,
+      0.9140563996302604,
+      0.7303730073791224,
+      1.1505036232899464,
+      36.7869699754943,
+      0.22350123380584805
+    ],
+    "std_drift": [
+      0.03753955345448604,
+      0.05043182203614673,
+      0.192837924955732,
+      0.2982668595791069,
+      0.1883342625267817,
+      0.052375004746254346,
+      0.13931718250724467,
+      0.14496599002524557,
+      0.01569887719384701,
+      1.2771783188672823,
+      0.012086779819089141,
+      0.12417191342769693,
+      0.29703983305585446,
+      0.06259421098416866,
+      0.0926741951399906,
+      0.022744073524237667,
+      0.017545146857556985
+    ],
+    "max_mean_drift": 36.7869699754943,
+    "max_std_drift": 1.2771783188672823,
+    "drift_detected": "True",
+    "timestamp": "2025-10-23T21:12:25.157602"
+  },
+  "performance_drift": {
+    "drift_detected": false,
+    "message": "Baseline ustawiony"
+  },
+  "hallucination_analysis": {
+    "confidence_distribution": {
+      "high_confidence": 109,
+      "medium_confidence": 357,
+      "low_confidence": 556,
+      "extreme_high": 0,
+      "extreme_low": 484
+    },
+    "confidence_variance": 0.1070719735537631,
+    "potential_hallucination": "True",
+    "timestamp": "2025-10-23T21:12:25.158236"
+  },
+  "consistency_analysis": {
+    "prediction_distribution": {
+      "positive_predictions": 335,
+      "negative_predictions": 687,
+      "positive_rate": 0.32778864970645794
+    },
+    "confidence_stats": {
+      "mean_confidence": 0.2935447508851792,
+      "std_confidence": 0.32721854096881964,
+      "min_confidence": 0.0,
+      "max_confidence": 0.8823277706461274
+    },
+    "anomalies_detected": 0,
+    "anomaly_rate": 0.0,
+    "timestamp": "2025-10-23T21:12:25.158558"
+  }
+}
