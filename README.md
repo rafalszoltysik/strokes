@@ -1,6 +1,6 @@
 # SYSTEM WSPIERANIA DECYZJI - PREDYKCJA UDARÓW MÓZGU
 
-## 📋 SPIS TREŚCI
+## SPIS TREŚCI
 
 1. [Wprowadzenie](#wprowadzenie)
 2. [Cel Systemu](#cel-systemu)
@@ -15,7 +15,7 @@
 
 ---
 
-## 🎯 WPROWADZENIE
+## WPROWADZENIE
 
 ### Definicja Systemu Wspierania Decyzji
 
@@ -33,7 +33,7 @@ System Wspierania Decyzji (DSS - Decision Support System) to zintegrowany system
 
 ---
 
-## 🎯 CEL SYSTEMU
+## CEL SYSTEMU
 
 ### Główne Cele
 
@@ -51,7 +51,7 @@ System Wspierania Decyzji (DSS - Decision Support System) to zintegrowany system
 
 ---
 
-## 🏗️ ARCHITEKTURA SYSTEMU
+## ARCHITEKTURA SYSTEMU
 
 ### Struktura Projektu
 
@@ -104,7 +104,7 @@ strokes/
 
 ---
 
-## 🔧 KOMPONENTY SYSTEMU
+## KOMPONENTY SYSTEMU
 
 ### 1. System Główny (`src/core/system.py`)
 
@@ -179,7 +179,7 @@ def run_complete_pipeline()    # Uruchomienie pełnego pipeline'u
 
 ---
 
-## 🔄 PROCES DECYZYJNY
+## PROCES DECYZYJNY
 
 ### Etapy Procesu Decyzyjnego
 
