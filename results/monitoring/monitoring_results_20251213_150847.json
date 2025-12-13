@@ -1,13 +1,13 @@
 {
   "model_name": "StrokePredictor",
-  "timestamp": "2025-10-23T21:12:25.156013",
+  "timestamp": "2025-12-13T15:08:46.827764",
   "current_metrics": {
     "accuracy": 0.7035225048923679,
     "precision": 0.944604479971552,
     "recall": 0.7035225048923679,
     "f1_score": 0.7877917123625464,
     "auc_score": 0.8464711934156378,
-    "timestamp": "2025-10-23T21:12:25.156002"
+    "timestamp": "2025-12-13T15:08:46.827757"
   },
   "data_drift": {
     "mean_drift": [
@@ -51,11 +51,11 @@
     "max_mean_drift": 36.7869699754943,
     "max_std_drift": 1.2771783188672823,
     "drift_detected": "True",
-    "timestamp": "2025-10-23T21:12:25.157602"
+    "timestamp": "2025-12-13T15:08:46.829361"
   },
   "performance_drift": {
     "drift_detected": false,
-    "message": "Baseline ustawiony"
+    "message": "Wartość bazowa ustawiona"
   },
   "hallucination_analysis": {
     "confidence_distribution": {
@@ -67,7 +67,7 @@
     },
     "confidence_variance": 0.1070719735537631,
     "potential_hallucination": "True",
-    "timestamp": "2025-10-23T21:12:25.158236"
+    "timestamp": "2025-12-13T15:08:46.830126"
   },
   "consistency_analysis": {
     "prediction_distribution": {
@@ -83,6 +83,6 @@
     },
     "anomalies_detected": 0,
     "anomaly_rate": 0.0,
-    "timestamp": "2025-10-23T21:12:25.158558"
+    "timestamp": "2025-12-13T15:08:46.830616"
   }
 }

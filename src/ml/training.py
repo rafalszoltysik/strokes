@@ -3,21 +3,18 @@
 import numpy as np
 import logging
 from typing import Dict, Any, Tuple
-from .models import ModelFactory
+from .models import FabrykaModeli
 
 logger = logging.getLogger(__name__)
 
-class ModelTrainer:
-    """Klasa do trenowania modeli ML"""
+class TrenerModeli:
     
-    def __init__(self, config: Dict[str, Any]):
-        """Inicjalizacja trenera modeli"""
-        self.config = config
-        self.models = {}
-        self.training_results = {}
+    def __init__(self, konfiguracja: Dict[str, Any]):
+        self.konfiguracja = konfiguracja
+        self.modele = {}
+        self.wyniki_treningu = {}
     
-    def train_models(self, X_train: np.ndarray, y_train: np.ndarray) -> Dict[str, Any]:
-        """Trenowanie wszystkich modeli"""
+    def trenuj_modele(self, X_train: np.ndarray, y_train: np.ndarray) -> Dict[str, Any]:
         logger.info("=== TRENOWANIE MODELI ===")
         
         # Walidacja danych treningowych
@@ -31,37 +28,35 @@ class ModelTrainer:
             raise ValueError("Niezgodność rozmiarów danych treningowych")
         
         # Tworzenie modeli
-        models_config = ModelFactory.create_models(self.config)
+        konfiguracja_modeli = FabrykaModeli.utworz_modele(self.konfiguracja)
         
         # Trenowanie każdego modelu
-        for name, model in models_config.items():
-            logger.info(f"Trenowanie modelu: {name}")
+        for nazwa, model in konfiguracja_modeli.items():
+            logger.info(f"Trenowanie modelu: {nazwa}")
             try:
                 model.fit(X_train, y_train)
-                self.models[name] = model
-                logger.info(f"Model {name} wytrenowany pomyślnie")
+                self.modele[nazwa] = model
+                logger.info(f"Model {nazwa} wytrenowany pomyślnie")
             except Exception as e:
-                logger.error(f"Błąd trenowania modelu {name}: {e}")
+                logger.error(f"Błąd trenowania modelu {nazwa}: {e}")
                 raise
         
-        logger.info(f"Wytrenowano {len(self.models)} modeli")
-        return self.models
+        logger.info(f"Wytrenowano {len(self.modele)} modeli")
+        return self.modele
     
-    def get_best_model(self, evaluation_results: Dict[str, Any]) -> Tuple[str, Any]:
-        """Wybór najlepszego modelu na podstawie wyników oceny"""
-        if not evaluation_results:
+    def pobierz_najlepszy_model(self, wyniki_oceny: Dict[str, Any]) -> Tuple[str, Any]:
+        if not wyniki_oceny:
             raise ValueError("Brak wyników oceny modeli")
         
         # Wybór modelu z najwyższym AUC
-        best_model_name = max(evaluation_results.keys(), 
-                            key=lambda x: evaluation_results[x]['auc_score'])
-        best_model = self.models[best_model_name]
+        nazwa_najlepszego = max(wyniki_oceny.keys(), 
+                            key=lambda x: wyniki_oceny[x]['wynik_auc'])
+        najlepszy_model = self.modele[nazwa_najlepszego]
         
-        logger.info(f"Wybrano najlepszy model: {best_model_name}")
-        return best_model_name, best_model
+        logger.info(f"Wybrano najlepszy model: {nazwa_najlepszego}")
+        return nazwa_najlepszego, najlepszy_model
     
-    def retrain_model(self, model, X_train: np.ndarray, y_train: np.ndarray):
-        """Ponowne trenowanie modelu na nowych danych"""
+    def przetrenuj_model(self, model, X_train: np.ndarray, y_train: np.ndarray):
         if model is None:
             raise ValueError("Model nie został wytrenowany")
         

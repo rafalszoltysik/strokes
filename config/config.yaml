@@ -1,21 +1,20 @@
 # Konfiguracja systemu predykcji udarów
-# Configuration for stroke prediction system
 
 data_quality:
   # Problematyczne wartości do zastąpienia NaN
-  problematic_values: 
-    - '#N/D'
-    - 'N/A'
-    - 'n/a'
-    - 'NULL'
-    - 'null'
-    - ''
-    - ' '
-    - '?'
-    - '-'
-    - 'unknown'
-    - 'Unknown'
-  
+  problematic_values:
+    - "#N/D"
+    - "N/A"
+    - "n/a"
+    - "NULL"
+    - "null"
+    - ""
+    - " "
+    - "?"
+    - "-"
+    - "unknown"
+    - "Unknown"
+
   # Nieprawidłowe zakresy wartości
   invalid_ranges:
     age:
@@ -33,18 +32,18 @@ preprocessing:
   test_size: 0.2
   random_state: 42
   stratify: true
-  
+
   # Strategie imputacji
   imputation_strategies:
-    bmi: "group_median"  # mediana według grupy wiekowej
-    default: "median"    # mediana ogólna
+    bmi: "group_median" # mediana według grupy wiekowej
+    default: "median" # mediana ogólna
 
 # Parametry modeli ML
 models:
   random_state: 42
   n_estimators: 100
   max_iter: 1000
-  
+
 # Parametry monitoringu
 monitoring:
   drift_threshold: 0.05
@@ -54,9 +53,9 @@ output:
   # Ścieżki wyjściowe
   processed_data_path: "data/processed/"
   save_intermediate: true
-  
+
   # Format zapisu
-  data_format: "numpy"  # numpy, csv, parquet
+  data_format: "numpy" # numpy, csv, parquet
 
 logging:
   level: "INFO"

@@ -10,21 +10,18 @@ from sklearn.metrics import (
 
 logger = logging.getLogger(__name__)
 
-class ModelEvaluator:
-    """Klasa do oceny modeli ML"""
+class EwaluatorModeli:
     
     def __init__(self):
-        """Inicjalizacja ewaluatora"""
-        self.evaluation_results = {}
+        self.wyniki_oceny = {}
     
-    def evaluate_models(self, models: Dict[str, Any], X_test: np.ndarray, y_test: np.ndarray) -> Dict[str, Any]:
-        """Ocena wszystkich modeli"""
+    def ocen_modele(self, modele: Dict[str, Any], X_test: np.ndarray, y_test: np.ndarray) -> Dict[str, Any]:
         logger.info("=== OCENA MODELI ===")
         
-        evaluation_results = {}
+        wyniki_oceny = {}
         
-        for name, model in models.items():
-            logger.info(f"Ocena modelu: {name}")
+        for nazwa, model in modele.items():
+            logger.info(f"Ocena modelu: {nazwa}")
             
             try:
                 # Predykcje
@@ -32,38 +29,36 @@ class ModelEvaluator:
                 y_pred_proba = model.predict_proba(X_test)[:, 1]
                 
                 # Metryki
-                metrics = self._calculate_metrics(y_test, y_pred, y_pred_proba)
+                metryki = self._oblicz_metryki(y_test, y_pred, y_pred_proba)
                 
-                evaluation_results[name] = {
+                wyniki_oceny[nazwa] = {
                     'model': model,
-                    'predictions': y_pred,
-                    'probabilities': y_pred_proba,
-                    **metrics
+                    'predykcje': y_pred,
+                    'prawdopodobienstwa': y_pred_proba,
+                    **metryki
                 }
                 
-                logger.info(f"Model {name}: AUC={metrics['auc_score']:.4f}, Accuracy={metrics['accuracy']:.4f}")
+                logger.info(f"Model {nazwa}: AUC={metryki['wynik_auc']:.4f}, Dokladnosc={metryki['dokladnosc']:.4f}")
                 
             except Exception as e:
-                logger.error(f"Błąd oceny modelu {name}: {e}")
+                logger.error(f"Błąd oceny modelu {nazwa}: {e}")
                 raise
         
-        self.evaluation_results = evaluation_results
+        self.wyniki_oceny = wyniki_oceny
         logger.info("Zakończono ocenę modeli")
-        return evaluation_results
+        return wyniki_oceny
     
-    def _calculate_metrics(self, y_true: np.ndarray, y_pred: np.ndarray, y_pred_proba: np.ndarray) -> Dict[str, float]:
-        """Obliczenie metryk wydajności"""
+    def _oblicz_metryki(self, y_true: np.ndarray, y_pred: np.ndarray, y_pred_proba: np.ndarray) -> Dict[str, float]:
         return {
-            'accuracy': (y_pred == y_true).mean(),
-            'auc_score': roc_auc_score(y_true, y_pred_proba),
-            'precision': precision_score(y_true, y_pred, average='weighted'),
-            'recall': recall_score(y_true, y_pred, average='weighted'),
-            'f1_score': f1_score(y_true, y_pred, average='weighted')
+            'dokladnosc': (y_pred == y_true).mean(),
+            'wynik_auc': roc_auc_score(y_true, y_pred_proba),
+            'precyzja': precision_score(y_true, y_pred, average='weighted'),
+            'czulosc': recall_score(y_true, y_pred, average='weighted'),
+            'wynik_f1': f1_score(y_true, y_pred, average='weighted')
         }
     
-    def optimize_classification_threshold(self, X_test: np.ndarray, y_test: np.ndarray, 
-                                        model, threshold_range: Tuple[float, float] = (0.1, 0.9)) -> Dict[str, Any]:
-        """Optymalizacja progu klasyfikacji"""
+    def optymalizuj_próg_klasyfikacji(self, X_test: np.ndarray, y_test: np.ndarray, 
+                                        model, zakres_progu: Tuple[float, float] = (0.1, 0.9)) -> Dict[str, Any]:
         logger.info("=== OPTYMALIZACJA PROGU KLASYFIKACJI ===")
         
         # Predykcje prawdopodobieństw
@@ -73,30 +68,30 @@ class ModelEvaluator:
             raise ValueError("Model nie został wytrenowany")
         
         # Optymalizacja progu na podstawie F1-score
-        thresholds = np.linspace(threshold_range[0], threshold_range[1], 50)
-        f1_scores = []
+        progi = np.linspace(zakres_progu[0], zakres_progu[1], 50)
+        wyniki_f1 = []
         
-        for threshold in thresholds:
-            y_pred_thresh = (y_pred_proba >= threshold).astype(int)
-            f1 = f1_score(y_test, y_pred_thresh, average='weighted')
-            f1_scores.append(f1)
+        for prog in progi:
+            y_pred_prog = (y_pred_proba >= prog).astype(int)
+            wynik_f1 = f1_score(y_test, y_pred_prog, average='weighted')
+            wyniki_f1.append(wynik_f1)
         
         # Znalezienie optymalnego progu
-        optimal_idx = np.argmax(f1_scores)
-        optimal_threshold = thresholds[optimal_idx]
-        optimal_f1 = f1_scores[optimal_idx]
+        indeks_optymalny = np.argmax(wyniki_f1)
+        prog_optymalny = progi[indeks_optymalny]
+        wynik_f1_optymalny = wyniki_f1[indeks_optymalny]
         
         # Obliczenie metryk dla optymalnego progu
-        y_pred_optimal = (y_pred_proba >= optimal_threshold).astype(int)
-        optimal_metrics = self._calculate_metrics(y_test, y_pred_optimal, y_pred_proba)
+        y_pred_optimal = (y_pred_proba >= prog_optymalny).astype(int)
+        metryki_optymalne = self._oblicz_metryki(y_test, y_pred_optimal, y_pred_proba)
         
-        threshold_metrics = {
-            'optimal_threshold': optimal_threshold,
-            'optimal_f1_score': optimal_f1,
-            'thresholds': thresholds.tolist(),
-            'f1_scores': f1_scores,
-            'metrics_at_optimal': optimal_metrics
+        metryki_progu = {
+            'prog_optymalny': prog_optymalny,
+            'wynik_f1_optymalny': wynik_f1_optymalny,
+            'progi': progi.tolist(),
+            'wyniki_f1': wyniki_f1,
+            'metryki_przy_optymalnym': metryki_optymalne
         }
         
-        logger.info(f"Optymalny próg: {optimal_threshold:.4f} (F1: {optimal_f1:.4f})")
-        return threshold_metrics
+        logger.info(f"Optymalny próg: {prog_optymalny:.4f} (F1: {wynik_f1_optymalny:.4f})")
+        return metryki_progu

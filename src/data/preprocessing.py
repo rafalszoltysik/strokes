@@ -21,99 +21,92 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-class DataPreprocessor:
-    """
-    Data preprocessor for stroke prediction dataset
-    """
+class PreprocessorDanych:
     
-    def __init__(self, config_manager=None):
-        """Inicjalizacja preprocessora z konfiguracją"""
-        if config_manager is None:
+    def __init__(self, menedzer_konfiguracji=None):
+        if menedzer_konfiguracji is None:
             from ..utils.config import ConfigManager
-            config_manager = ConfigManager()
-        self.config = config_manager.config
-        self.scaler = StandardScaler()
-        self.label_encoders = {}
-        self.feature_names = None
-        self.preprocessing_stats = {}
+            menedzer_konfiguracji = ConfigManager()
+        self.konfiguracja = menedzer_konfiguracji.konfiguracja
+        self.skalownik = StandardScaler()
+        self.kodery_etykiet = {}
+        self.nazwy_cech = None
+        self.statystyki_preprocessingu = {}
         
     
-    def load_data(self, data_path: str) -> pd.DataFrame:
-        """Ładowanie danych z pliku CSV"""
-        logger.info(f"Ładowanie danych z: {data_path}")
+    def zaladuj_dane(self, sciezka_danych: str) -> pd.DataFrame:
+        logger.info(f"Ładowanie danych z: {sciezka_danych}")
         try:
-            df = pd.read_csv(data_path)
+            df = pd.read_csv(sciezka_danych)
             logger.info(f"Załadowano {df.shape[0]} obserwacji z {df.shape[1]} cechami")
             return df
         except Exception as e:
             logger.error(f"Błąd podczas ładowania danych: {e}")
             raise
     
-    def handle_data_quality_issues(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Obsługa problemów z jakością danych"""
+    def obsluz_problemy_jakosci_danych(self, df: pd.DataFrame) -> pd.DataFrame:
         logger.info("Rozpoczęcie obsługi problemów z jakością danych")
-        df_processed = df.copy()
+        df_przetworzony = df.copy()
         
         # 1. Obsługa problematycznych wartości
-        problematic_values = self.config['data_quality']['problematic_values']
-        for col in df_processed.columns:
-            if df_processed[col].dtype == 'object':
-                before_count = df_processed[col].isnull().sum()
-                df_processed[col] = df_processed[col].replace(problematic_values, np.nan)
-                after_count = df_processed[col].isnull().sum()
-                if after_count > before_count:
-                    logger.info(f"Kolumna {col}: znaleziono {after_count - before_count} problematycznych wartości")
+        wartosci_problematyczne = self.konfiguracja['data_quality']['problematic_values']
+        for kolumna in df_przetworzony.columns:
+            if df_przetworzony[kolumna].dtype == 'object':
+                liczba_przed = df_przetworzony[kolumna].isnull().sum()
+                df_przetworzony[kolumna] = df_przetworzony[kolumna].replace(wartosci_problematyczne, np.nan)
+                liczba_po = df_przetworzony[kolumna].isnull().sum()
+                if liczba_po > liczba_przed:
+                    logger.info(f"Kolumna {kolumna}: znaleziono {liczba_po - liczba_przed} problematycznych wartości")
         
         # Obsługa NaN w kolumnach kategorycznych - zastąpienie przed dalszym przetwarzaniem
-        for col in df_processed.columns:
-            if df_processed[col].dtype == 'object' and df_processed[col].isnull().any():
-                df_processed[col] = df_processed[col].fillna('Unknown')
-                logger.info(f"Zastąpiono NaN w kolumnie {col} wartością 'Unknown'")
+        for kolumna in df_przetworzony.columns:
+            if df_przetworzony[kolumna].dtype == 'object' and df_przetworzony[kolumna].isnull().any():
+                df_przetworzony[kolumna] = df_przetworzony[kolumna].fillna('Unknown')
+                logger.info(f"Zastąpiono NaN w kolumnie {kolumna} wartością 'Unknown'")
         
         # 2. Obsługa nieprawidłowych wartości 0
-        zero_issues = {}
-        for col in ['age', 'bmi', 'avg_glucose_level']:
-            if col in df_processed.columns:
-                zeros = (df_processed[col] == 0).sum()
-                if zeros > 0:
-                    logger.info(f"Znaleziono {zeros} przypadków {col} = 0, zastępowanie medianą")
-                    df_processed.loc[df_processed[col] == 0, col] = df_processed[col].median()
-                    zero_issues[col] = zeros
+        problemy_zerowe = {}
+        for kolumna in ['age', 'bmi', 'avg_glucose_level']:
+            if kolumna in df_przetworzony.columns:
+                zera = (df_przetworzony[kolumna] == 0).sum()
+                if zera > 0:
+                    logger.info(f"Znaleziono {zera} przypadków {kolumna} = 0, zastępowanie medianą")
+                    df_przetworzony.loc[df_przetworzony[kolumna] == 0, kolumna] = df_przetworzony[kolumna].median()
+                    problemy_zerowe[kolumna] = zera
         
         # 3. Walidacja zakresów wartości
-        invalid_ranges = self.config['data_quality']['invalid_ranges']
-        for col, ranges in invalid_ranges.items():
-            if col in df_processed.columns:
+        nieprawidlowe_zakresy = self.konfiguracja['data_quality']['invalid_ranges']
+        for kolumna, zakresy in nieprawidlowe_zakresy.items():
+            if kolumna in df_przetworzony.columns:
                 # Sprawdź tylko wartości numeryczne (nie NaN)
-                numeric_mask = pd.notna(df_processed[col])
-                invalid_count = ((df_processed[col] < ranges['min']) | 
-                               (df_processed[col] > ranges['max'])).sum()
-                if invalid_count > 0:
-                    logger.info(f"Znaleziono {invalid_count} przypadków nieprawidłowego {col}, zastępowanie medianą")
-                    invalid_mask = (df_processed[col] < ranges['min']) | (df_processed[col] > ranges['max'])
-                    df_processed.loc[invalid_mask, col] = df_processed[col].median()
-                    logger.info(f"Zastąpiono {invalid_count} nieprawidłowych wartości {col} medianą: {df_processed[col].median():.2f}")
+                maska_numeryczna = pd.notna(df_przetworzony[kolumna])
+                liczba_nieprawidlowych = ((df_przetworzony[kolumna] < zakresy['min']) | 
+                               (df_przetworzony[kolumna] > zakresy['max'])).sum()
+                if liczba_nieprawidlowych > 0:
+                    logger.info(f"Znaleziono {liczba_nieprawidlowych} przypadków nieprawidłowego {kolumna}, zastępowanie medianą")
+                    maska_nieprawidlowa = (df_przetworzony[kolumna] < zakresy['min']) | (df_przetworzony[kolumna] > zakresy['max'])
+                    df_przetworzony.loc[maska_nieprawidlowa, kolumna] = df_przetworzony[kolumna].median()
+                    logger.info(f"Zastąpiono {liczba_nieprawidlowych} nieprawidłowych wartości {kolumna} medianą: {df_przetworzony[kolumna].median():.2f}")
         
-        self.preprocessing_stats['data_quality'] = {
-            'zero_issues': zero_issues,
-            'invalid_ranges': invalid_ranges
+        self.statystyki_preprocessingu['data_quality'] = {
+            'zero_issues': problemy_zerowe,
+            'invalid_ranges': nieprawidlowe_zakresy
         }
         
         logger.info("Zakończono obsługę problemów z jakością danych")
-        return df_processed
+        return df_przetworzony
     
-    def handle_missing_values(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Obsługa braków danych"""
+    def obsluz_braki_danych(self, df: pd.DataFrame) -> pd.DataFrame:
         logger.info("Rozpoczęcie obsługi braków danych")
         df_processed = df.copy()
         
-        missing_stats = {}
+        statystyki_brakow = {}
         for col in df_processed.columns:
-            missing_count = df_processed[col].isnull().sum()
-            if missing_count > 0:
-                missing_percent = (missing_count / len(df_processed)) * 100
-                missing_stats[col] = {'count': missing_count, 'percent': missing_percent}
-                logger.info(f"Kolumna {col}: {missing_count} braków ({missing_percent:.2f}%)")
+            liczba_brakow = df_processed[col].isnull().sum()
+            if liczba_brakow > 0:
+                procent_brakow = (liczba_brakow / len(df_processed)) * 100
+                statystyki_brakow[col] = {'count': liczba_brakow, 'percent': procent_brakow}
+                logger.info(f"Kolumna {col}: {liczba_brakow} braków ({procent_brakow:.2f}%)")
                 
                 # Strategia obsługi braków danych
                 if col == 'bmi':
@@ -195,13 +188,13 @@ class DataPreprocessor:
                     df_processed[col] = df_processed[col].fillna(df_processed[col].median())
         
         # Aktualizacja statystyk po imputacji
-        final_count = len(df_processed)
-        self.preprocessing_stats['missing_values'] = missing_stats
-        self.preprocessing_stats['data_retention'] = {
+        liczba_koncowa = len(df_processed)
+        self.statystyki_preprocessingu['missing_values'] = statystyki_brakow
+        self.statystyki_preprocessingu['data_retention'] = {
             'initial_rows': len(df),
-            'final_rows': final_count,
-            'removed_rows': len(df) - final_count,
-            'retention_rate': (final_count / len(df)) * 100
+            'final_rows': liczba_koncowa,
+            'removed_rows': len(df) - liczba_koncowa,
+            'retention_rate': (liczba_koncowa / len(df)) * 100
         }
         
         # Walidacja po imputacji
@@ -214,7 +207,7 @@ class DataPreprocessor:
                 logger.info(f"Kolumna {col}: brak braków danych")
         
         # Sprawdzenie zakresów wartości po imputacji
-        for col, ranges in self.config['data_quality']['invalid_ranges'].items():
+        for col, ranges in self.konfiguracja['data_quality']['invalid_ranges'].items():
             if col in df_processed.columns:
                 invalid_count = ((df_processed[col] < ranges['min']) | 
                                (df_processed[col] > ranges['max'])).sum()
@@ -224,11 +217,10 @@ class DataPreprocessor:
                     logger.info(f"Kolumna {col}: wszystkie wartości w prawidłowym zakresie")
         
         logger.info(f"Zakończono obsługę braków danych")
-        logger.info(f"Zachowano {final_count} wierszy z {len(df)} ({self.preprocessing_stats['data_retention']['retention_rate']:.1f}%)")
+        logger.info(f"Zachowano {liczba_koncowa} wierszy z {len(df)} ({self.statystyki_preprocessingu['data_retention']['retention_rate']:.1f}%)")
         return df_processed
     
-    def encode_categorical_variables(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Kodowanie zmiennych kategorycznych"""
+    def zakoduj_zmienne_kategoryczne(self, df: pd.DataFrame) -> pd.DataFrame:
         logger.info("Rozpoczęcie kodowania zmiennych kategorycznych")
         df_processed = df.copy()
         
@@ -240,7 +232,7 @@ class DataPreprocessor:
                 # Obsługa wartości NaN przed kodowaniem
                 df_processed[col] = df_processed[col].fillna('Unknown')
                 df_processed[col] = le.fit_transform(df_processed[col].astype(str))
-                self.label_encoders[col] = le
+                self.kodery_etykiet[col] = le
                 logger.info(f"Zakodowano kolumnę {col} (Label Encoding)")
         
         # One-hot encoding dla zmiennych nominalnych
@@ -257,9 +249,8 @@ class DataPreprocessor:
         logger.info("Zakończono kodowanie zmiennych kategorycznych")
         return df_processed
     
-    def prepare_features_and_target(self, df: pd.DataFrame, target_column: str = 'stroke') -> Tuple[pd.DataFrame, pd.Series]:
-        """Przygotowanie cech i zmiennej docelowej"""
-        logger.info(f"Przygotowanie cech i zmiennej docelowej (target: {target_column})")
+    def przygotuj_cechy_i_cel(self, df: pd.DataFrame, kolumna_celu: str = 'stroke') -> Tuple[pd.DataFrame, pd.Series]:
+        logger.info(f"Przygotowanie cech i zmiennej docelowej (cel: {kolumna_celu})")
         
         # Usunięcie kolumny ID
         if 'id' in df.columns:
@@ -267,30 +258,29 @@ class DataPreprocessor:
             logger.info("Usunięto kolumnę ID")
         
         # Podział na cechy i zmienną docelową
-        X = df.drop(target_column, axis=1)
-        y = df[target_column]
+        X = df.drop(kolumna_celu, axis=1)
+        y = df[kolumna_celu]
         
-        self.feature_names = X.columns.tolist()
+        self.nazwy_cech = X.columns.tolist()
         logger.info(f"Przygotowano {X.shape[1]} cech i {len(y)} obserwacji")
         
         return X, y
     
-    def split_and_scale_data(self, X: pd.DataFrame, y: pd.Series) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        """Podział danych i normalizacja"""
+    def podziel_i_skaluj_dane(self, X: pd.DataFrame, y: pd.Series) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         logger.info("Rozpoczęcie podziału danych i normalizacji")
         
         # Podział na zbiory treningowe i testowe
-        test_size = self.config['preprocessing']['test_size']
-        random_state = self.config['preprocessing']['random_state']
-        stratify = self.config['preprocessing']['stratify']
+        rozmiar_testu = self.konfiguracja['preprocessing']['test_size']
+        losowy_stan = self.konfiguracja['preprocessing']['random_state']
+        stratyfikacja = self.konfiguracja['preprocessing']['stratify']
         
         X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=test_size, random_state=random_state, stratify=y if stratify else None
+            X, y, test_size=rozmiar_testu, random_state=losowy_stan, stratify=y if stratyfikacja else None
         )
         
         # Normalizacja cech
-        X_train_scaled = self.scaler.fit_transform(X_train)
-        X_test_scaled = self.scaler.transform(X_test)
+        X_train_scaled = self.skalownik.fit_transform(X_train)
+        X_test_scaled = self.skalownik.transform(X_test)
         
         logger.info(f"Podzielono dane: treningowe {X_train.shape[0]}, testowe {X_test.shape[0]}")
         logger.info("Zakończono normalizację cech")
@@ -298,34 +288,32 @@ class DataPreprocessor:
         return X_train_scaled, X_test_scaled, y_train, y_test
     
     
-    def create_clean_dataset(self, data_path: str, output_path: str = "data/processed/clean_dataset.csv") -> str:
-        """Tworzenie jednego oczyszczonego pliku CSV"""
+    def utworz_czysty_zbior(self, sciezka_danych: str, sciezka_wyjscia: str = "data/processed/clean_dataset.csv") -> str:
         logger.info("=== TWORZENIE OCZYSZCZONEGO ZBIORU DANYCH ===")
         
         # 1. Ładowanie danych
-        df = self.load_data(data_path)
+        df = self.zaladuj_dane(sciezka_danych)
         logger.info(f"Załadowano {len(df)} wierszy")
         
         # 2. Obsługa problemów z jakością
-        df = self.handle_data_quality_issues(df)
+        df = self.obsluz_problemy_jakosci_danych(df)
         
         # 3. Obsługa braków danych
-        df = self.handle_missing_values(df)
+        df = self.obsluz_braki_danych(df)
         logger.info(f"Po obsłudze braków: {len(df)} wierszy")
         
         # 4. Kodowanie zmiennych kategorycznych
-        df = self.encode_categorical_variables(df)
+        df = self.zakoduj_zmienne_kategoryczne(df)
         
         # 5. Zapisanie oczyszczonego zbioru
-        df.to_csv(output_path, index=False)
-        logger.info(f"Zapisano oczyszczony zbiór: {output_path}")
+        df.to_csv(sciezka_wyjscia, index=False)
+        logger.info(f"Zapisano oczyszczony zbiór: {sciezka_wyjscia}")
         logger.info(f"Kolumny: {list(df.columns)}")
         logger.info(f"Rozmiar: {df.shape}")
         
-        return output_path
+        return sciezka_wyjscia
 
-    def validate_data_quality(self, df: pd.DataFrame) -> Dict[str, Any]:
-        """Walidacja jakości danych po preprocessingu"""
+    def waliduj_jakosc_danych(self, df: pd.DataFrame) -> Dict[str, Any]:
         logger.info("=== WALIDACJA JAKOŚCI DANYCH ===")
         
         validation_results = {
@@ -390,52 +378,51 @@ class DataPreprocessor:
         logger.info("Zakończono walidację jakości danych")
         return validation_results
 
-    def process_data(self, data_path: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, list]:
-        """Główna metoda przetwarzania danych"""
+    def przetworz_dane(self, sciezka_danych: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, list]:
         logger.info("=== ROZPOCZĘCIE PRZETWARZANIA DANYCH ===")
         
         # 1. Ładowanie danych
-        df = self.load_data(data_path)
+        df = self.zaladuj_dane(sciezka_danych)
         
         # 2. Obsługa problemów z jakością
-        df = self.handle_data_quality_issues(df)
+        df = self.obsluz_problemy_jakosci_danych(df)
         
         # 3. Obsługa braków danych
-        df = self.handle_missing_values(df)
+        df = self.obsluz_braki_danych(df)
         
         # 4. Kodowanie zmiennych kategorycznych
-        df = self.encode_categorical_variables(df)
+        df = self.zakoduj_zmienne_kategoryczne(df)
         
         # 5. Walidacja jakości danych po preprocessingu
-        validation_results = self.validate_data_quality(df)
-        self.preprocessing_stats['validation'] = validation_results
+        wyniki_walidacji = self.waliduj_jakosc_danych(df)
+        self.statystyki_preprocessingu['validation'] = wyniki_walidacji
         
         # 6. Przygotowanie cech i zmiennej docelowej
-        X, y = self.prepare_features_and_target(df)
+        X, y = self.przygotuj_cechy_i_cel(df)
         
         # 7. Podział i normalizacja
-        X_train, X_test, y_train, y_test = self.split_and_scale_data(X, y)
+        X_train, X_test, y_train, y_test = self.podziel_i_skaluj_dane(X, y)
         
         # 8. Zapisanie przetworzonych danych - TYLKO STATYSTYKI
-        if self.config['output']['save_intermediate']:
+        if self.konfiguracja['output']['save_intermediate']:
             # Zapisanie tylko statystyk preprocessingu
             import json
-            output_path = Path(self.config['output']['processed_data_path'])
-            output_path.mkdir(parents=True, exist_ok=True)
+            sciezka_wyjscia = Path(self.konfiguracja['output']['processed_data_path'])
+            sciezka_wyjscia.mkdir(parents=True, exist_ok=True)
             
-            with open(output_path / 'preprocessing_stats.json', 'w') as f:
-                json.dump(self.preprocessing_stats, f, indent=2, default=str)
+            with open(sciezka_wyjscia / 'preprocessing_stats.json', 'w') as plik:
+                json.dump(self.statystyki_preprocessingu, plik, indent=2, default=str)
             
-            logger.info(f"Zapisano statystyki preprocessingu w: {output_path}")
+            logger.info(f"Zapisano statystyki preprocessingu w: {sciezka_wyjscia}")
         
         logger.info("=== ZAKOŃCZENIE PRZETWARZANIA DANYCH ===")
         
-        # Zwróć feature_names jako listę lub pustą listę jeśli None
-        feature_names_list = self.feature_names if self.feature_names is not None else []
-        return X_train, X_test, y_train, y_test, feature_names_list
+        # Zwróć nazwy_cech jako listę lub pustą listę jeśli None
+        lista_nazw_cech = self.nazwy_cech if self.nazwy_cech is not None else []
+        return X_train, X_test, y_train, y_test, lista_nazw_cech
 
 if __name__ == "__main__":
     # Przykład użycia
-    preprocessor = DataPreprocessor()
-    X_train, X_test, y_train, y_test, feature_names = preprocessor.process_data("data/raw/healthcare-dataset-stroke-data.csv")
-    print(f"Przetworzono dane: {X_train.shape[0]} próbek treningowych, {X_test.shape[0]} testowych")
+    preprocessor = PreprocessorDanych()
+    X_train, X_test, y_train, y_test, nazwy_cech = preprocessor.przetworz_dane("data/raw/healthcare-dataset-stroke-data.csv")
+    logger.info(f"Przetworzono dane: {X_train.shape[0]} próbek treningowych, {X_test.shape[0]} testowych")

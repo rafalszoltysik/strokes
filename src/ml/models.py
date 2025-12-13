@@ -9,42 +9,39 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-class ModelFactory:
-    """Factory do tworzenia modeli ML"""
+class FabrykaModeli:
     
     @staticmethod
-    def create_models(config: Dict[str, Any]) -> Dict[str, Any]:
-        """Tworzenie słownika modeli na podstawie konfiguracji"""
-        random_state = config.get('random_state', 42)
-        n_estimators = config.get('n_estimators', 100)
-        max_iter = config.get('max_iter', 1000)
+    def utworz_modele(konfiguracja: Dict[str, Any]) -> Dict[str, Any]:
+        losowy_stan = konfiguracja.get('random_state', 42)
+        liczba_estymatorow = konfiguracja.get('n_estimators', 100)
+        maks_iteracji = konfiguracja.get('max_iter', 1000)
         
-        models = {
+        modele = {
             'Random Forest': RandomForestClassifier(
-                random_state=random_state, 
-                n_estimators=n_estimators
+                random_state=losowy_stan, 
+                n_estimators=liczba_estymatorow
             ),
             'Gradient Boosting': GradientBoostingClassifier(
-                random_state=random_state
+                random_state=losowy_stan
             ),
             'Logistic Regression': LogisticRegression(
-                random_state=random_state, 
-                max_iter=max_iter
+                random_state=losowy_stan, 
+                max_iter=maks_iteracji
             ),
             'SVM': SVC(
-                random_state=random_state, 
+                random_state=losowy_stan, 
                 probability=True
             )
         }
         
-        logger.info(f"Utworzono {len(models)} modeli ML")
-        return models
+        logger.info(f"Utworzono {len(modele)} modeli ML")
+        return modele
     
     @staticmethod
-    def create_calibrated_model(base_model, method: str = 'isotonic', cv: int = 3):
-        """Tworzenie kalibrowanego modelu"""
+    def utworz_model_kalibrowany(model_bazowy, metoda: str = 'isotonic', cv: int = 3):
         return CalibratedClassifierCV(
-            base_model,
-            method=method,
+            model_bazowy,
+            method=metoda,
             cv=cv
         )

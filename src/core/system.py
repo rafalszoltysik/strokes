@@ -6,35 +6,28 @@ from typing import Dict, Any, Optional
 import numpy as np
 
 from ..utils.config import ConfigManager
-from ..utils.logging import setup_logging
-from ..data.preprocessing import DataPreprocessor
-from ..analysis.visualization import VisualizationAnalyzer
-from ..analysis.monitoring import ModelMonitor
-from ..ml.training import ModelTrainer
-from ..ml.evaluation import ModelEvaluator
-from ..ml.models import ModelFactory
+from ..utils.logging import ustaw_logowanie
+from ..data.preprocessing import PreprocessorDanych
+from ..analysis.visualization import AnalizatorWizualizacji
+from ..analysis.monitoring import MonitorModelu
+from ..ml.training import TrenerModeli
+from ..ml.evaluation import EwaluatorModeli
+from ..ml.models import FabrykaModeli
 
 logger = logging.getLogger(__name__)
 
 class StrokePredictionSystem:
-    """
-    System do predykcji udarów mózgu - Decision Support System (DSS)
-    
-    Ten system implementuje kompletny pipeline machine learning do predykcji ryzyka udaru
-    na podstawie danych medycznych pacjentów.
-    """
     
     def __init__(self, config_path: str = "config/config.yaml"):
-        """Inicjalizacja systemu"""
-        self.setup_directories()
+        self.utworz_katalogi()
         self.config_manager = ConfigManager(config_path)
-        self.config = self.config_manager.config
+        self.config = self.config_manager.konfiguracja
         
         # Inicjalizacja komponentów
-        self.preprocessor = DataPreprocessor(self.config_manager)
-        self.visualizer = VisualizationAnalyzer()
-        self.trainer = ModelTrainer(self.config['models'])
-        self.evaluator = ModelEvaluator()
+        self.preprocessor = PreprocessorDanych(self.config_manager)
+        self.wizualizator = AnalizatorWizualizacji()
+        self.trener = TrenerModeli(self.config['models'])
+        self.ewaluator = EwaluatorModeli()
         
         # Stan systemu
         self.models = {}
@@ -42,10 +35,9 @@ class StrokePredictionSystem:
         self.optimal_threshold = self.config['monitoring']['optimal_threshold_default']
         self.results = {}
         
-        logger.info("System Stroke Prediction zainicjalizowany")
+        logger.info("System predykcji udarów zainicjalizowany")
     
-    def setup_directories(self):
-        """Utworzenie struktury katalogów"""
+    def utworz_katalogi(self):
         directories = [
             'data/raw', 'data/processed', 'results/plots', 
             'results/reports', 'results/monitoring', 'config'
@@ -56,8 +48,7 @@ class StrokePredictionSystem:
         
         logger.info("Utworzono strukturę katalogów")
     
-    def load_and_preprocess_data(self, data_path: str):
-        """Ładowanie i pre-processing danych"""
+    def zaladuj_i_przetworz_dane(self, data_path: str):
         logger.info("=== ETAP 1: PRE-PROCESSING DANYCH ===")
         
         # Walidacja ścieżki do danych
@@ -66,12 +57,12 @@ class StrokePredictionSystem:
         
         # 1. Tworzenie oczyszczonego zbioru danych
         logger.info("Tworzenie oczyszczonego zbioru danych...")
-        clean_data_path = self.preprocessor.create_clean_dataset(data_path, "data/processed/clean_dataset.csv")
-        logger.info(f"Utworzono oczyszczony zbiór: {clean_data_path}")
+        sciezka_czystych_danych = self.preprocessor.utworz_czysty_zbior(data_path, "data/processed/clean_dataset.csv")
+        logger.info(f"Utworzono oczyszczony zbiór: {sciezka_czystych_danych}")
         
         # 2. Pre-processing danych z oczyszczonego zbioru
         logger.info("Pre-processing z oczyszczonego zbioru...")
-        X_train, X_test, y_train, y_test, feature_names = self.preprocessor.process_data(clean_data_path)
+        X_train, X_test, y_train, y_test, nazwy_cech = self.preprocessor.przetworz_dane(sciezka_czystych_danych)
         
         # Walidacja wyników preprocessingu
         if X_train is None or X_test is None or y_train is None or y_test is None:
@@ -80,42 +71,40 @@ class StrokePredictionSystem:
         if X_train.shape[0] == 0 or X_test.shape[0] == 0:
             raise ValueError("Błąd w preprocessingu - puste dane")
         
-        if len(feature_names) == 0:
+        if len(nazwy_cech) == 0:
             raise ValueError("Błąd w preprocessingu - brak cech")
         
         # Ładowanie DataFrame dla wizualizacji
         import pandas as pd
-        df_clean = pd.read_csv(clean_data_path)
+        df_czysty = pd.read_csv(sciezka_czystych_danych)
         
         logger.info(f"Przetworzono dane: {X_train.shape[0]} próbek treningowych, {X_test.shape[0]} testowych")
-        logger.info(f"Oczyszczony zbiór: {clean_data_path}")
+        logger.info(f"Oczyszczony zbiór: {sciezka_czystych_danych}")
         
-        return X_train, X_test, y_train, y_test, feature_names, df_clean
+        return X_train, X_test, y_train, y_test, nazwy_cech, df_czysty
     
-    def create_visualizations(self, df):
-        """Tworzenie wizualizacji i analiz"""
+    def utworz_wizualizacje(self, df):
         logger.info("=== ETAP 2: WIZUALIZACJA I ANALIZA ===")
         
         # Podstawowe rozkłady
-        basic_insights = self.visualizer.create_basic_distributions(df)
+        wnioski_podstawowe = self.wizualizator.utworz_podstawowe_rozkłady(df)
         
         # Analiza powiązań z udarem
-        relationship_insights = self.visualizer.analyze_stroke_relationships(df)
+        wnioski_powiazan = self.wizualizator.analizuj_powiazania_z_udarem(df)
         
         # Analiza korelacji
-        correlation_insights = self.visualizer.create_correlation_analysis(df)
+        wnioski_korelacji = self.wizualizator.utworz_analize_korelacji(df)
         
         # Zapisanie wniosków
-        self.visualizer.save_insights_report()
+        self.wizualizator.zapisz_raport_wnioskow()
         
         return {
-            'basic_insights': basic_insights,
-            'relationship_insights': relationship_insights,
-            'correlation_insights': correlation_insights
+            'basic_insights': wnioski_podstawowe,
+            'relationship_insights': wnioski_powiazan,
+            'correlation_insights': wnioski_korelacji
         }
     
-    def train_models(self, X_train: np.ndarray, y_train: np.ndarray):
-        """Trenowanie modeli"""
+    def trenuj_modele(self, X_train: np.ndarray, y_train: np.ndarray):
         logger.info("=== ETAP 3: TRENOWANIE MODELI ===")
         
         # Walidacja danych treningowych
@@ -129,44 +118,43 @@ class StrokePredictionSystem:
             raise ValueError("Niezgodność rozmiarów danych treningowych")
         
         # Trenowanie modeli
-        self.models = self.trainer.train_models(X_train, y_train)
+        self.models = self.trener.trenuj_modele(X_train, y_train)
         
         logger.info(f"Wytrenowano {len(self.models)} modeli")
         return self.models
     
-    def evaluate_models(self, X_test: np.ndarray, y_test: np.ndarray):
-        """Ocena modeli"""
+    def ocen_modele(self, X_test: np.ndarray, y_test: np.ndarray):
         logger.info("=== ETAP 4: OCENA MODELI ===")
         
         # Ocena wszystkich modeli
-        evaluation_results = self.evaluator.evaluate_models(self.models, X_test, y_test)
+        wyniki_oceny = self.ewaluator.ocen_modele(self.models, X_test, y_test)
         
         # Wybór najlepszego modelu
-        best_model_name, self.best_model = self.trainer.get_best_model(evaluation_results)
+        nazwa_najlepszego, self.best_model = self.trener.pobierz_najlepszy_model(wyniki_oceny)
         
         # Analiza wydajności najlepszego modelu
-        best_predictions = evaluation_results[best_model_name]['predictions']
-        best_probabilities = evaluation_results[best_model_name]['probabilities']
+        najlepsze_predykcje = wyniki_oceny[nazwa_najlepszego]['predykcje']
+        najlepsze_prawdopodobienstwa = wyniki_oceny[nazwa_najlepszego]['prawdopodobienstwa']
         
-        performance_insights = self.visualizer.create_model_performance_analysis(
-            y_test, best_predictions, best_probabilities, best_model_name
+        wnioski_wydajnosci = self.wizualizator.utworz_analize_wydajnosci_modelu(
+            y_test, najlepsze_predykcje, najlepsze_prawdopodobienstwa, nazwa_najlepszego
         )
         
         # Analiza ważności cech
-        feature_insights = self.visualizer.create_feature_importance_analysis(
-            self.best_model, self.preprocessor.feature_names
+        nazwy_cech = self.preprocessor.nazwy_cech if self.preprocessor.nazwy_cech is not None else []
+        wnioski_cech = self.wizualizator.utworz_analize_waznosci_cech(
+            self.best_model, nazwy_cech
         )
         
-        self.results['evaluation'] = evaluation_results
-        self.results['best_model'] = best_model_name
-        self.results['performance_insights'] = performance_insights
-        self.results['feature_insights'] = feature_insights
+        self.results['evaluation'] = wyniki_oceny
+        self.results['best_model'] = nazwa_najlepszego
+        self.results['performance_insights'] = wnioski_wydajnosci
+        self.results['feature_insights'] = wnioski_cech
         
-        logger.info(f"Najlepszy model: {best_model_name}")
-        return evaluation_results
+        logger.info(f"Najlepszy model: {nazwa_najlepszego}")
+        return wyniki_oceny
     
-    def optimize_classification_threshold(self, X_test: np.ndarray, y_test: np.ndarray):
-        """Optymalizacja progu klasyfikacji"""
+    def optymalizuj_próg_klasyfikacji(self, X_test: np.ndarray, y_test: np.ndarray):
         logger.info("=== OPTYMALIZACJA PROGU KLASYFIKACJI ===")
         
         # Predykcje prawdopodobieństw
@@ -176,14 +164,13 @@ class StrokePredictionSystem:
             raise ValueError("Model nie został wytrenowany")
         
         # Optymalizacja progu na podstawie F1-score
-        threshold_metrics = self.evaluator.optimize_classification_threshold(X_test, y_test, self.best_model)
-        self.optimal_threshold = threshold_metrics['optimal_threshold']
+        metryki_progu = self.ewaluator.optymalizuj_próg_klasyfikacji(X_test, y_test, self.best_model)
+        self.optimal_threshold = metryki_progu['prog_optymalny']
         
         logger.info(f"Optymalny próg: {self.optimal_threshold:.4f}")
-        return threshold_metrics
+        return metryki_progu
     
-    def handle_class_imbalance(self, X_train: np.ndarray, y_train: np.ndarray):
-        """Ulepszona obsługa niezbalansowania klas"""
+    def obsluz_niezbalansowanie_klas(self, X_train: np.ndarray, y_train: np.ndarray):
         logger.info("=== OBSŁUGA NIEZBALANSOWANIA KLAS ===")
         
         # Analiza niezbalansowania
@@ -224,24 +211,23 @@ class StrokePredictionSystem:
         
         # Ponowne trenowanie najlepszego modelu
         if self.best_model is not None:
-            self.trainer.retrain_model(self.best_model, X_train_balanced, y_train_balanced)
+            self.trener.przetrenuj_model(self.best_model, X_train_balanced, y_train_balanced)
         else:
             raise ValueError("Model nie został wytrenowany")
         
         return X_train_balanced, y_train_balanced
     
-    def calibrate_model(self, X_train: np.ndarray, y_train: np.ndarray):
-        """Kalibracja modelu dla lepszej pewności predykcji"""
+    def kalibruj_model(self, X_train: np.ndarray, y_train: np.ndarray):
         logger.info("=== KALIBRACJA MODELU ===")
         
         # Kalibracja modelu - zastępujemy best_model kalibrowanym
-        calibrated_model = ModelFactory.create_calibrated_model(self.best_model)
+        model_kalibrowany = FabrykaModeli.utworz_model_kalibrowany(self.best_model)
         
         # Trenowanie skalaryzowanego modelu
         if self.best_model is not None:
-            calibrated_model.fit(X_train, y_train)
+            model_kalibrowany.fit(X_train, y_train)
             # Zastępujemy best_model kalibrowanym
-            self.best_model = calibrated_model
+            self.best_model = model_kalibrowany
         else:
             raise ValueError("Model nie został wytrenowany")
         
@@ -249,9 +235,8 @@ class StrokePredictionSystem:
         logger.info("Zakończono kalibrację modelu - zmniejszenie halucynacji")
         return self.best_model
     
-    def monitor_model_performance(self, X_test: np.ndarray, y_test: np.ndarray, 
+    def monitoruj_wydajnosc_modelu(self, X_test: np.ndarray, y_test: np.ndarray, 
                                 X_baseline: Optional[np.ndarray] = None):
-        """Monitoring wydajności modelu"""
         logger.info("=== ETAP 6: MONITORING MODELU ===")
         
         # Używamy best_model (który jest już kalibrowany)
@@ -259,22 +244,21 @@ class StrokePredictionSystem:
             raise ValueError("Model nie został wytrenowany")
         
         # Pobieranie drift_threshold z konfiguracji
-        drift_threshold = self.config['monitoring']['drift_threshold']
-        monitor = ModelMonitor(self.best_model, "StrokePredictor", drift_threshold)
+        prog_driftu = self.config['monitoring']['drift_threshold']
+        monitor = MonitorModelu(self.best_model, "StrokePredictor", prog_driftu)
         
         # Monitoring modelu
         if X_baseline is not None:
-            monitoring_results = monitor.monitor_model(X_test, y_test, X_baseline)
+            wyniki_monitoringu = monitor.monitoruj_model(X_test, y_test, X_baseline)
         else:
-            monitoring_results = monitor.monitor_model(X_test, y_test)
+            wyniki_monitoringu = monitor.monitoruj_model(X_test, y_test)
         
-        self.results['monitoring'] = monitoring_results
+        self.results['monitoring'] = wyniki_monitoringu
         
         logger.info("Zakończono monitoring modelu")
-        return monitoring_results
+        return wyniki_monitoringu
     
-    def generate_report(self):
-        """Generowanie raportu końcowego"""
+    def wygeneruj_raport(self):
         logger.info("=== GENEROWANIE RAPORTU ===")
         
         from datetime import datetime
@@ -283,7 +267,7 @@ class StrokePredictionSystem:
         
         with open(report_path, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("STROKE PREDICTION SYSTEM - RAPORT KOŃCOWY\n")
+            f.write("SYSTEM PREDYKCJI UDARÓW - RAPORT KOŃCOWY\n")
             f.write("="*80 + "\n")
             f.write(f"Data wygenerowania: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
             f.write("="*80 + "\n\n")
@@ -298,19 +282,19 @@ class StrokePredictionSystem:
                 f.write("=== WYNIKI MODELI ===\n")
                 for model_name, results in self.results['evaluation'].items():
                     f.write(f"{model_name}:\n")
-                    f.write(f"  - Accuracy: {results['accuracy']:.4f}\n")
-                    f.write(f"  - AUC Score: {results['auc_score']:.4f}\n")
-                    f.write(f"  - Precision: {results['precision']:.4f}\n")
-                    f.write(f"  - Recall: {results['recall']:.4f}\n")
-                    f.write(f"  - F1-Score: {results['f1_score']:.4f}\n")
+                    f.write(f"  - Dokładność: {results['dokladnosc']:.4f}\n")
+                    f.write(f"  - Wynik AUC: {results['wynik_auc']:.4f}\n")
+                    f.write(f"  - Precyzja: {results['precyzja']:.4f}\n")
+                    f.write(f"  - Czułość: {results['czulosc']:.4f}\n")
+                    f.write(f"  - Wynik F1: {results['wynik_f1']:.4f}\n")
                 
                 f.write(f"\nNajlepszy model: {self.results['best_model']}\n")
                 f.write("\n=== INTERPRETACJA METRYK ===\n")
-                f.write("Accuracy: Ogólna dokładność modelu\n")
-                f.write("AUC Score: Zdolność do rozróżniania między klasami (0.5=losowy, 0.8+=bardzo dobry)\n")
-                f.write("Precision: Ile z przewidzianych udarów to prawdziwe udary\n")
-                f.write("Recall: Ile z prawdziwych udarów zostało wykrytych\n")
-                f.write("F1-Score: Średnia harmoniczna precision i recall\n\n")
+                f.write("Dokładność: Ogólna dokładność modelu\n")
+                f.write("Wynik AUC: Zdolność do rozróżniania między klasami (0.5=losowy, 0.8+=bardzo dobry)\n")
+                f.write("Precyzja: Ile z przewidzianych udarów to prawdziwe udary\n")
+                f.write("Czułość: Ile z prawdziwych udarów zostało wykrytych\n")
+                f.write("Wynik F1: Średnia harmoniczna precyzji i czułości\n\n")
             
             # Optymalizacje modelu
             f.write("=== OPTYMALIZACJE MODELU ===\n")
@@ -321,13 +305,13 @@ class StrokePredictionSystem:
             # Wnioski z analizy
             if 'performance_insights' in self.results:
                 f.write("=== WNIOSKI Z ANALIZY ===\n")
-                f.write(f"BASIC DISTRIBUTIONS:\n")
+                f.write(f"PODSTAWOWE ROZKŁADY:\n")
                 f.write(f"  - Wysoki poziom niezbalansowania klas (4.9% udarów)\n")
                 f.write(f"  - Średni wiek: 43.2 lat, zakres: 0.1-82.0\n")
                 f.write(f"  - Średnie BMI: 28.9, zakres: 10.3-97.6\n")
                 f.write(f"  - Średni poziom glukozy: 106.1 mg/dL\n\n")
                 
-                f.write(f"STROKE RELATIONSHIPS:\n")
+                f.write(f"POWIĄZANIA Z UDAREM:\n")
                 f.write(f"  - Pacjenci z udarem są średnio o 25.8 lat starsi\n")
                 f.write(f"  - Pacjenci z udarem mają średnio o 2.1 wyższe BMI\n")
                 f.write(f"  - Pacjenci z udarem mają średnio o 15.3 mg/dL wyższy poziom glukozy\n")
@@ -340,10 +324,10 @@ class StrokePredictionSystem:
                 
                 if 'current_metrics' in monitoring:
                     results = monitoring['current_metrics']
-                    f.write(f"Accuracy: {results['accuracy']:.4f}\n")
-                    f.write(f"Precision: {results['precision']:.4f}\n")
-                    f.write(f"Recall: {results['recall']:.4f}\n")
-                    f.write(f"F1-Score: {results['f1_score']:.4f}\n")
+                    f.write(f"Dokładność: {results['accuracy']:.4f}\n")
+                    f.write(f"Precyzja: {results['precision']:.4f}\n")
+                    f.write(f"Czułość: {results['recall']:.4f}\n")
+                    f.write(f"Wynik F1: {results['f1_score']:.4f}\n")
                 
                 if 'data_drift' in monitoring:
                     drift_data = monitoring['data_drift']
@@ -355,8 +339,6 @@ class StrokePredictionSystem:
                         f.write(f"Drift danych: WYKRYTO (NORMALNY - test vs train)\n")
                         f.write(f"  - Max mean drift: {max_mean:.2f}\n")
                         f.write(f"  - Max std drift: {max_std:.2f}\n")
-                        f.write(f"  - Uwaga: To normalne porównanie test vs train - nie wymaga uwagi\n")
-                        f.write(f"  - W produkcji porównywalibyśmy nowe dane vs historyczne\n")
                     else:
                         f.write(f"Drift danych: BRAK\n")
                 

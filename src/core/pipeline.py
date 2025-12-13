@@ -7,36 +7,25 @@ from .system import StrokePredictionSystem
 logger = logging.getLogger(__name__)
 
 class PipelineOrchestrator:
-    """Orchestrator dla kompletnego pipeline'u ML"""
     
     def __init__(self, system: StrokePredictionSystem):
-        """Inicjalizacja orchestratora"""
         self.system = system
     
-    def run_pipeline(self, data_path: str) -> Dict[str, Any]:
-        """
-        Uruchomienie kompletnego pipeline'u predykcji udarów
-        
-        Args:
-            data_path (str): Ścieżka do pliku z danymi medycznymi (CSV)
-            
-        Returns:
-            dict: Słownik z wynikami pipeline'u
-        """
+    def uruchom_pipeline(self, data_path: str) -> Dict[str, Any]:
         logger.info("ROZPOCZĘCIE PIPELINE")
         
         try:
             # Etap 1-2: Pre-processing i wizualizacja
-            data_results = self._run_data_preparation(data_path)
+            data_results = self._uruchom_przygotowanie_danych(data_path)
             
             # Etap 3-4: Trenowanie i ocena modeli
-            model_results = self._run_model_training_and_evaluation(data_results)
+            model_results = self._uruchom_trenowanie_i_ocena_modeli(data_results)
             
             # Etap 5-7: Optymalizacja i kalibracja
-            optimization_results = self._run_model_optimization(data_results, model_results)
+            optimization_results = self._uruchom_optymalizacja_modelu(data_results, model_results)
             
             # Etap 8: Monitoring i raport
-            final_results = self._run_monitoring_and_reporting(optimization_results)
+            final_results = self._uruchom_monitoring_i_raportowanie(optimization_results)
             
             logger.info("PIPELINE ZAKOŃCZONY POMYŚLNIE")
             return final_results
@@ -44,98 +33,94 @@ class PipelineOrchestrator:
         except FileNotFoundError as e:
             logger.error(f"BŁĄD: Nie znaleziono pliku - {e}")
             return {
-                'success': False,
-                'error': f"Nie znaleziono pliku: {e}",
-                'error_type': 'FileNotFoundError'
+                'sukces': False,
+                'blad': f"Nie znaleziono pliku: {e}",
+                'typ_bledu': 'NieZnalezionoPliku'
             }
         except ValueError as e:
             logger.error(f"BŁĄD: Nieprawidłowe dane - {e}")
             return {
-                'success': False,
-                'error': f"Błąd danych: {e}",
-                'error_type': 'ValueError'
+                'sukces': False,
+                'blad': f"Błąd danych: {e}",
+                'typ_bledu': 'BłądDanych'
             }
         except Exception as e:
             logger.error(f"BŁĄD W PIPELINE: {e}")
             return {
-                'success': False,
-                'error': str(e),
-                'error_type': 'UnknownError'
+                'sukces': False,
+                'blad': str(e),
+                'typ_bledu': 'NieznanyBłąd'
             }
     
-    def _run_data_preparation(self, data_path: str):
-        """Etap 1-2: Pre-processing i wizualizacja danych"""
+    def _uruchom_przygotowanie_danych(self, data_path: str):
         # 1. Pre-processing
-        X_train, X_test, y_train, y_test, feature_names, df_clean = self.system.load_and_preprocess_data(data_path)
+        X_train, X_test, y_train, y_test, nazwy_cech, df_czysty = self.system.zaladuj_i_przetworz_dane(data_path)
         
         # 2. Wizualizacja
-        visualization_insights = self.system.create_visualizations(df_clean)
+        wnioski_wizualizacji = self.system.utworz_wizualizacje(df_czysty)
         
         return {
             'X_train': X_train, 'X_test': X_test, 'y_train': y_train, 'y_test': y_test,
-            'feature_names': feature_names, 'df_clean': df_clean,
-            'visualization_insights': visualization_insights
+            'nazwy_cech': nazwy_cech, 'df_czysty': df_czysty,
+            'wnioski_wizualizacji': wnioski_wizualizacji
         }
     
-    def _run_model_training_and_evaluation(self, data_results):
-        """Etap 3-4: Trenowanie i ocena modeli"""
-        X_train = data_results['X_train']
-        y_train = data_results['y_train']
-        X_test = data_results['X_test']
-        y_test = data_results['y_test']
+    def _uruchom_trenowanie_i_ocena_modeli(self, wyniki_danych):
+        X_train = wyniki_danych['X_train']
+        y_train = wyniki_danych['y_train']
+        X_test = wyniki_danych['X_test']
+        y_test = wyniki_danych['y_test']
         
         # 3. Trenowanie modeli
-        model_results = self.system.train_models(X_train, y_train)
+        wyniki_modeli = self.system.trenuj_modele(X_train, y_train)
         
         # 4. Ocena modeli
-        evaluation_results = self.system.evaluate_models(X_test, y_test)
+        wyniki_oceny = self.system.ocen_modele(X_test, y_test)
         
         return {
-            **data_results,
-            'model_results': model_results,
-            'evaluation_results': evaluation_results
+            **wyniki_danych,
+            'wyniki_modeli': wyniki_modeli,
+            'wyniki_oceny': wyniki_oceny
         }
     
-    def _run_model_optimization(self, data_results, model_results):
-        """Etap 5-7: Optymalizacja i kalibracja modelu"""
-        X_train = data_results['X_train']
-        y_train = data_results['y_train']
-        X_test = data_results['X_test']
-        y_test = data_results['y_test']
+    def _uruchom_optymalizacja_modelu(self, wyniki_danych, wyniki_modeli):
+        X_train = wyniki_danych['X_train']
+        y_train = wyniki_danych['y_train']
+        X_test = wyniki_danych['X_test']
+        y_test = wyniki_danych['y_test']
         
         # 5. Ulepszona obsługa niezbalansowania
-        X_train_balanced, y_train_balanced = self.system.handle_class_imbalance(X_train, y_train)
+        X_train_balanced, y_train_balanced = self.system.obsluz_niezbalansowanie_klas(X_train, y_train)
         
         # 6. Optymalizacja progu klasyfikacji (PO balansowaniu)
-        threshold_metrics = self.system.optimize_classification_threshold(X_test, y_test)
+        metryki_progu = self.system.optymalizuj_próg_klasyfikacji(X_test, y_test)
         
         # 7. Kalibracja modelu
-        calibrated_model = self.system.calibrate_model(X_train_balanced, y_train_balanced)
+        model_kalibrowany = self.system.kalibruj_model(X_train_balanced, y_train_balanced)
         
         return {
-            **model_results,
+            **wyniki_modeli,
             'X_train_balanced': X_train_balanced,
             'y_train_balanced': y_train_balanced,
-            'threshold_metrics': threshold_metrics,
-            'calibrated_model': calibrated_model
+            'metryki_progu': metryki_progu,
+            'model_kalibrowany': model_kalibrowany
         }
     
-    def _run_monitoring_and_reporting(self, optimization_results):
-        """Etap 8: Monitoring i generowanie raportu"""
-        X_test = optimization_results['X_test']
-        y_test = optimization_results['y_test']
-        X_train_balanced = optimization_results['X_train_balanced']
+    def _uruchom_monitoring_i_raportowanie(self, wyniki_optymalizacji):
+        X_test = wyniki_optymalizacji['X_test']
+        y_test = wyniki_optymalizacji['y_test']
+        X_train_balanced = wyniki_optymalizacji['X_train_balanced']
         
         # 8. Monitoring
-        monitoring_results = self.system.monitor_model_performance(X_test, y_test, X_train_balanced)
+        wyniki_monitoringu = self.system.monitoruj_wydajnosc_modelu(X_test, y_test, X_train_balanced)
         
         # 9. Raport
-        report_path = self.system.generate_report()
+        sciezka_raportu = self.system.wygeneruj_raport()
         
         return {
-            'success': True,
-            'report_path': report_path,
-            'results': self.system.results,
-            'visualization_insights': optimization_results['visualization_insights'],
-            'monitoring_results': monitoring_results
+            'sukces': True,
+            'sciezka_raportu': sciezka_raportu,
+            'wyniki': self.system.results,
+            'wnioski_wizualizacji': wyniki_optymalizacji['wnioski_wizualizacji'],
+            'wyniki_monitoringu': wyniki_monitoringu
         }

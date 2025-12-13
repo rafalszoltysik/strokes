@@ -5,12 +5,11 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-def setup_logging(level: str = "INFO", log_file: Optional[str] = None) -> logging.Logger:
-    """Konfiguracja systemu logowania"""
+def ustaw_logowanie(poziom: str = "INFO", plik_logu: Optional[str] = None) -> logging.Logger:
     
     # Tworzenie katalogu logs jeśli nie istnieje
-    if log_file:
-        Path(log_file).parent.mkdir(parents=True, exist_ok=True)
+    if plik_logu:
+        Path(plik_logu).parent.mkdir(parents=True, exist_ok=True)
     
     # Konfiguracja formatu logowania
     formatter = logging.Formatter(
@@ -18,18 +17,18 @@ def setup_logging(level: str = "INFO", log_file: Optional[str] = None) -> loggin
     )
     
     # Konfiguracja handlerów
-    handlers = [logging.StreamHandler(sys.stdout)]
+    handlery = [logging.StreamHandler(sys.stdout)]
     
-    if log_file:
-        file_handler = logging.FileHandler(log_file, encoding='utf-8')
-        file_handler.setFormatter(formatter)
-        handlers.append(file_handler)
+    if plik_logu:
+        handler_pliku = logging.FileHandler(plik_logu, encoding='utf-8')
+        handler_pliku.setFormatter(formatter)
+        handlery.append(handler_pliku)
     
     # Konfiguracja głównego loggera
     logging.basicConfig(
-        level=getattr(logging, level.upper()),
+        level=getattr(logging, poziom.upper()),
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=handlers
+        handlers=handlery
     )
     
     # Wyłączenie niepotrzebnych logów
@@ -38,6 +37,5 @@ def setup_logging(level: str = "INFO", log_file: Optional[str] = None) -> loggin
     
     return logging.getLogger(__name__)
 
-def get_logger(name: str) -> logging.Logger:
-    """Pobieranie loggera dla konkretnego modułu"""
-    return logging.getLogger(name)
+def pobierz_logger(nazwa: str) -> logging.Logger:
+    return logging.getLogger(nazwa)

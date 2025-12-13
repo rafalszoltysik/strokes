@@ -25,23 +25,18 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-class ModelMonitor:
-    """
-    Model monitoring and hallucination detection
-    """
+class MonitorModelu:
     
-    def __init__(self, model, model_name: str = "StrokePredictor", drift_threshold: float = 0.05):
-        """Inicjalizacja monitora modelu"""
+    def __init__(self, model, nazwa_modelu: str = "StrokePredictor", prog_driftu: float = 0.05):
         self.model = model
-        self.model_name = model_name
-        self.monitoring_history = []
-        self.performance_baseline = None
-        self.drift_threshold = drift_threshold  # Próg driftu z konfiguracji
+        self.nazwa_modelu = nazwa_modelu
+        self.historia_monitoringu = []
+        self.bazowa_wydajnosc = None
+        self.prog_driftu = prog_driftu  # Próg driftu z konfiguracji
         
-    def calculate_model_metrics(self, y_true: np.ndarray, y_pred: np.ndarray, 
+    def oblicz_metryki_modelu(self, y_true: np.ndarray, y_pred: np.ndarray, 
                               y_pred_proba: np.ndarray) -> Dict[str, float]:
-        """Obliczenie metryk wydajności modelu"""
-        metrics = {
+        metryki = {
             'accuracy': accuracy_score(y_true, y_pred),
             'precision': precision_score(y_true, y_pred, average='weighted'),
             'recall': recall_score(y_true, y_pred, average='weighted'),
@@ -49,23 +44,22 @@ class ModelMonitor:
             'auc_score': roc_auc_score(y_true, y_pred_proba),
             'timestamp': datetime.now().isoformat()
         }
-        return metrics
+        return metryki
     
-    def detect_data_drift(self, X_new: np.ndarray, X_baseline: np.ndarray) -> Dict[str, Any]:
-        """Wykrywanie driftu danych"""
+    def wykryj_drift_danych(self, X_new: np.ndarray, X_baseline: np.ndarray) -> Dict[str, Any]:
         logger.info("Sprawdzanie driftu danych")
         
-        drift_results = {}
+        wyniki_driftu = {}
         
         # Porównanie statystyk
-        baseline_stats = {
+        statystyki_bazowe = {
             'mean': np.mean(X_baseline, axis=0),
             'std': np.std(X_baseline, axis=0),
             'min': np.min(X_baseline, axis=0),
             'max': np.max(X_baseline, axis=0)
         }
         
-        new_stats = {
+        statystyki_nowe = {
             'mean': np.mean(X_new, axis=0),
             'std': np.std(X_new, axis=0),
             'min': np.min(X_new, axis=0),
@@ -74,131 +68,128 @@ class ModelMonitor:
         
         # Obliczenie różnic z obsługą dzielenia przez zero
         # Unikamy dzielenia przez zero używając np.where
-        mean_drift = np.where(
-            np.abs(baseline_stats['mean']) > 1e-10,  # Jeśli baseline nie jest bliski zero
-            np.abs(new_stats['mean'] - baseline_stats['mean']) / np.abs(baseline_stats['mean']),
+        drift_sredniej = np.where(
+            np.abs(statystyki_bazowe['mean']) > 1e-10,  # Jeśli baseline nie jest bliski zero
+            np.abs(statystyki_nowe['mean'] - statystyki_bazowe['mean']) / np.abs(statystyki_bazowe['mean']),
             0.0  # Jeśli baseline jest bliski zero, drift = 0
         )
         
-        std_drift = np.where(
-            np.abs(baseline_stats['std']) > 1e-10,  # Jeśli baseline nie jest bliski zero
-            np.abs(new_stats['std'] - baseline_stats['std']) / np.abs(baseline_stats['std']),
+        drift_std = np.where(
+            np.abs(statystyki_bazowe['std']) > 1e-10,  # Jeśli baseline nie jest bliski zero
+            np.abs(statystyki_nowe['std'] - statystyki_bazowe['std']) / np.abs(statystyki_bazowe['std']),
             0.0  # Jeśli baseline jest bliski zero, drift = 0
         )
         
-        drift_results = {
-            'mean_drift': mean_drift.tolist(),
-            'std_drift': std_drift.tolist(),
-            'max_mean_drift': float(np.max(mean_drift)),
-            'max_std_drift': float(np.max(std_drift)),
-            'drift_detected': np.max(mean_drift) > self.drift_threshold or np.max(std_drift) > self.drift_threshold,
+        wyniki_driftu = {
+            'mean_drift': drift_sredniej.tolist(),
+            'std_drift': drift_std.tolist(),
+            'max_mean_drift': float(np.max(drift_sredniej)),
+            'max_std_drift': float(np.max(drift_std)),
+            'drift_detected': np.max(drift_sredniej) > self.prog_driftu or np.max(drift_std) > self.prog_driftu,
             'timestamp': datetime.now().isoformat()
         }
         
-        if drift_results['drift_detected']:
-            logger.warning(f"Wykryto drift danych: max_mean_drift={drift_results['max_mean_drift']:.3f}, max_std_drift={drift_results['max_std_drift']:.3f}")
-            logger.info(f"Próg driftu: {self.drift_threshold}")
-            logger.info(f"Liczba cech z driftem mean: {np.sum(mean_drift > self.drift_threshold)}")
-            logger.info(f"Liczba cech z driftem std: {np.sum(std_drift > self.drift_threshold)}")
+        if wyniki_driftu['drift_detected']:
+            logger.warning(f"Wykryto drift danych: max_mean_drift={wyniki_driftu['max_mean_drift']:.3f}, max_std_drift={wyniki_driftu['max_std_drift']:.3f}")
+            logger.info(f"Próg driftu: {self.prog_driftu}")
+            logger.info(f"Liczba cech z driftem mean: {np.sum(drift_sredniej > self.prog_driftu)}")
+            logger.info(f"Liczba cech z driftem std: {np.sum(drift_std > self.prog_driftu)}")
         else:
             logger.info("Nie wykryto znaczącego driftu danych")
-            logger.info(f"Max mean drift: {drift_results['max_mean_drift']:.6f}, Max std drift: {drift_results['max_std_drift']:.6f}")
+            logger.info(f"Max mean drift: {wyniki_driftu['max_mean_drift']:.6f}, Max std drift: {wyniki_driftu['max_std_drift']:.6f}")
         
-        return drift_results
+        return wyniki_driftu
     
-    def detect_performance_drift(self, current_metrics: Dict[str, float]) -> Dict[str, Any]:
-        """Wykrywanie driftu wydajności"""
+    def wykryj_drift_wydajnosci(self, aktualne_metryki: Dict[str, float]) -> Dict[str, Any]:
         logger.info("Sprawdzanie driftu wydajności")
         
-        if self.performance_baseline is None:
-            self.performance_baseline = current_metrics
-            logger.info("Ustawiono baseline wydajności")
-            return {'drift_detected': False, 'message': 'Baseline ustawiony'}
+        if self.bazowa_wydajnosc is None:
+            self.bazowa_wydajnosc = aktualne_metryki
+            logger.info("Ustawiono wartość bazową wydajności")
+            return {'drift_detected': False, 'message': 'Wartość bazowa ustawiona'}
         
-        performance_drift = {}
+        drift_wydajnosci = {}
         
-        for metric in ['accuracy', 'precision', 'recall', 'f1_score', 'auc_score']:
-            if metric in self.performance_baseline and metric in current_metrics:
-                baseline_value = self.performance_baseline[metric]
-                current_value = current_metrics[metric]
-                drift = (baseline_value - current_value) / baseline_value
-                performance_drift[metric] = {
-                    'baseline': baseline_value,
-                    'current': current_value,
+        for metryka in ['accuracy', 'precision', 'recall', 'f1_score', 'auc_score']:
+            if metryka in self.bazowa_wydajnosc and metryka in aktualne_metryki:
+                wartosc_bazowa = self.bazowa_wydajnosc[metryka]
+                wartosc_aktualna = aktualne_metryki[metryka]
+                drift = (wartosc_bazowa - wartosc_aktualna) / wartosc_bazowa
+                drift_wydajnosci[metryka] = {
+                    'baseline': wartosc_bazowa,
+                    'current': wartosc_aktualna,
                     'drift': drift,
-                    'significant_drift': drift > self.drift_threshold
+                    'significant_drift': drift > self.prog_driftu
                 }
         
-        significant_drift = any(drift['significant_drift'] for drift in performance_drift.values())
+        znaczący_drift = any(drift['significant_drift'] for drift in drift_wydajnosci.values())
         
-        drift_results = {
-            'performance_drift': performance_drift,
-            'significant_drift': significant_drift,
+        wyniki_driftu = {
+            'performance_drift': drift_wydajnosci,
+            'significant_drift': znaczący_drift,
             'timestamp': datetime.now().isoformat()
         }
         
-        if significant_drift:
+        if znaczący_drift:
             logger.warning("Wykryto znaczący drift wydajności!")
-            for metric, drift_info in performance_drift.items():
-                if drift_info['significant_drift']:
-                    logger.warning(f"{metric}: {drift_info['baseline']:.3f} -> {drift_info['current']:.3f} (drift: {drift_info['drift']:.3f})")
+            for metryka, info_driftu in drift_wydajnosci.items():
+                if info_driftu['significant_drift']:
+                    logger.warning(f"{metryka}: {info_driftu['baseline']:.3f} -> {info_driftu['current']:.3f} (drift: {info_driftu['drift']:.3f})")
         else:
             logger.info("Wydajność modelu pozostaje stabilna")
         
-        return drift_results
+        return wyniki_driftu
     
-    def detect_hallucination_patterns(self, y_pred_proba: np.ndarray, 
-                                    confidence_threshold: float = 0.8) -> Dict[str, Any]:
-        """Wykrywanie wzorców halucynacji"""
+    def wykryj_wzorce_halucynacji(self, y_pred_proba: np.ndarray, 
+                                    prog_pewnosci: float = 0.8) -> Dict[str, Any]:
         logger.info("Sprawdzanie wzorców halucynacji")
         
         # Analiza rozkładu pewności predykcji
-        high_confidence = np.sum(y_pred_proba > confidence_threshold)
-        low_confidence = np.sum(y_pred_proba < (1 - confidence_threshold))
-        medium_confidence = len(y_pred_proba) - high_confidence - low_confidence
+        wysoka_pewnosc = np.sum(y_pred_proba > prog_pewnosci)
+        niska_pewnosc = np.sum(y_pred_proba < (1 - prog_pewnosci))
+        srednia_pewnosc = len(y_pred_proba) - wysoka_pewnosc - niska_pewnosc
         
         # Wykrywanie ekstremalnych wartości pewności
-        extreme_high = np.sum(y_pred_proba > 0.95)
-        extreme_low = np.sum(y_pred_proba < 0.05)
+        ekstremalnie_wysoka = np.sum(y_pred_proba > 0.95)
+        ekstremalnie_niska = np.sum(y_pred_proba < 0.05)
         
         # Analiza wariancji pewności
-        confidence_variance = np.var(y_pred_proba)
+        wariancja_pewnosci = np.var(y_pred_proba)
         
-        hallucination_results = {
+        wyniki_halucynacji = {
             'confidence_distribution': {
-                'high_confidence': int(high_confidence),
-                'medium_confidence': int(medium_confidence),
-                'low_confidence': int(low_confidence),
-                'extreme_high': int(extreme_high),
-                'extreme_low': int(extreme_low)
+                'high_confidence': int(wysoka_pewnosc),
+                'medium_confidence': int(srednia_pewnosc),
+                'low_confidence': int(niska_pewnosc),
+                'extreme_high': int(ekstremalnie_wysoka),
+                'extreme_low': int(ekstremalnie_niska)
             },
-            'confidence_variance': float(confidence_variance),
-            'potential_hallucination': extreme_high > len(y_pred_proba) * 0.1 or extreme_low > len(y_pred_proba) * 0.1,
+            'confidence_variance': float(wariancja_pewnosci),
+            'potential_hallucination': ekstremalnie_wysoka > len(y_pred_proba) * 0.1 or ekstremalnie_niska > len(y_pred_proba) * 0.1,
             'timestamp': datetime.now().isoformat()
         }
         
-        if hallucination_results['potential_hallucination']:
+        if wyniki_halucynacji['potential_hallucination']:
             logger.warning("Wykryto potencjalne wzorce halucynacji!")
-            logger.warning(f"Ekstremalnie wysokie pewności: {extreme_high}, ekstremalnie niskie: {extreme_low}")
+            logger.warning(f"Ekstremalnie wysokie pewności: {ekstremalnie_wysoka}, ekstremalnie niskie: {ekstremalnie_niska}")
         else:
             logger.info("Nie wykryto wzorców halucynacji")
         
-        return hallucination_results
+        return wyniki_halucynacji
     
-    def analyze_prediction_consistency(self, X: np.ndarray, y_pred: np.ndarray, 
+    def analizuj_spojnosc_predykcji(self, X: np.ndarray, y_pred: np.ndarray, 
                                      y_pred_proba: np.ndarray) -> Dict[str, Any]:
-        """Analiza spójności predykcji"""
         logger.info("Analiza spójności predykcji")
         
         # Analiza rozkładu predykcji
-        prediction_distribution = {
+        rozklad_predykcji = {
             'positive_predictions': int(np.sum(y_pred == 1)),
             'negative_predictions': int(np.sum(y_pred == 0)),
             'positive_rate': float(np.mean(y_pred))
         }
         
         # Analiza pewności predykcji
-        confidence_stats = {
+        statystyki_pewnosci = {
             'mean_confidence': float(np.mean(y_pred_proba)),
             'std_confidence': float(np.std(y_pred_proba)),
             'min_confidence': float(np.min(y_pred_proba)),
@@ -206,94 +197,93 @@ class ModelMonitor:
         }
         
         # Wykrywanie anomalii w predykcjach
-        anomaly_threshold = 2.0  # 2 odchylenia standardowe
-        confidence_z_scores = np.abs((y_pred_proba - confidence_stats['mean_confidence']) / confidence_stats['std_confidence'])
-        anomalies = np.sum(confidence_z_scores > anomaly_threshold)
+        prog_anomalii = 2.0  # 2 odchylenia standardowe
+        z_scores_pewnosci = np.abs((y_pred_proba - statystyki_pewnosci['mean_confidence']) / statystyki_pewnosci['std_confidence'])
+        anomalie = np.sum(z_scores_pewnosci > prog_anomalii)
         
-        consistency_results = {
-            'prediction_distribution': prediction_distribution,
-            'confidence_stats': confidence_stats,
-            'anomalies_detected': int(anomalies),
-            'anomaly_rate': float(anomalies / len(y_pred_proba)),
+        wyniki_spojnosci = {
+            'prediction_distribution': rozklad_predykcji,
+            'confidence_stats': statystyki_pewnosci,
+            'anomalies_detected': int(anomalie),
+            'anomaly_rate': float(anomalie / len(y_pred_proba)),
             'timestamp': datetime.now().isoformat()
         }
         
-        if consistency_results['anomaly_rate'] > 0.05:  # 5% anomalii
-            logger.warning(f"Wykryto {anomalies} anomalii w predykcjach ({consistency_results['anomaly_rate']:.1%})")
+        if wyniki_spojnosci['anomaly_rate'] > 0.05:  # 5% anomalii
+            logger.warning(f"Wykryto {anomalie} anomalii w predykcjach ({wyniki_spojnosci['anomaly_rate']:.1%})")
         else:
             logger.info("Predykcje są spójne")
         
-        return consistency_results
+        return wyniki_spojnosci
     
-    def create_monitoring_dashboard(self, monitoring_results: Dict[str, Any]) -> None:
-        """Tworzenie dashboardu monitoringu"""
+    def utworz_dashboard_monitoringu(self, wyniki_monitoringu: Dict[str, Any]) -> None:
         logger.info("Tworzenie dashboardu monitoringu")
         
-        fig, axes = plt.subplots(2, 2, figsize=(15, 12))
-        fig.suptitle(f'Dashboard Monitoringu Modelu - {self.model_name}', fontsize=16, fontweight='bold')
+        fig, osie = plt.subplots(2, 2, figsize=(15, 12))
+        fig.suptitle(f'Dashboard Monitoringu Modelu - {self.nazwa_modelu}', fontsize=16, fontweight='bold')
         
         # 1. Historia wydajności
-        if 'performance_history' in monitoring_results:
-            history = monitoring_results['performance_history']
-            metrics = ['accuracy', 'precision', 'recall', 'f1_score', 'auc_score']
+        if 'performance_history' in wyniki_monitoringu:
+            historia = wyniki_monitoringu['performance_history']
+            metryki = ['accuracy', 'precision', 'recall', 'f1_score', 'auc_score']
             
-            for i, metric in enumerate(metrics):
-                if metric in history:
-                    axes[0,0].plot(history[metric], label=metric, marker='o')
+            for i, metryka in enumerate(metryki):
+                if metryka in historia:
+                    osie[0,0].plot(historia[metryka], label=metryka, marker='o')
             
-            axes[0,0].set_title('Historia Wydajności Modelu')
-            axes[0,0].set_xlabel('Czas')
-            axes[0,0].set_ylabel('Wartość metryki')
-            axes[0,0].legend()
-            axes[0,0].grid(True, alpha=0.3)
+            osie[0,0].set_title('Historia Wydajności Modelu')
+            osie[0,0].set_xlabel('Czas')
+            osie[0,0].set_ylabel('Wartość metryki')
+            osie[0,0].legend()
+            osie[0,0].grid(True, alpha=0.3)
         
         # 2. Rozkład pewności predykcji
-        if 'hallucination_analysis' in monitoring_results:
-            hallucination = monitoring_results['hallucination_analysis']
-            conf_dist = hallucination['confidence_distribution']
+        if 'hallucination_analysis' in wyniki_monitoringu:
+            halucynacje = wyniki_monitoringu['hallucination_analysis']
+            rozklad_pewnosci = halucynacje['confidence_distribution']
             
-            categories = ['Niska', 'Średnia', 'Wysoka', 'Ekstremalnie wysoka']
-            values = [conf_dist['low_confidence'], conf_dist['medium_confidence'], 
-                    conf_dist['high_confidence'], conf_dist['extreme_high']]
+            kategorie = ['Niska', 'Średnia', 'Wysoka', 'Ekstremalnie wysoka']
+            wartosci = [rozklad_pewnosci['low_confidence'], rozklad_pewnosci['medium_confidence'], 
+                    rozklad_pewnosci['high_confidence'], rozklad_pewnosci['extreme_high']]
             
-            axes[0,1].bar(categories, values, color=['red', 'yellow', 'green', 'purple'], alpha=0.7)
-            axes[0,1].set_title('Rozkład Pewności Predykcji')
-            axes[0,1].set_ylabel('Liczba predykcji')
-            axes[0,1].tick_params(axis='x', rotation=45)
+            osie[0,1].bar(kategorie, wartosci, color=['red', 'yellow', 'green', 'purple'], alpha=0.7)
+            osie[0,1].set_title('Rozkład Pewności Predykcji')
+            osie[0,1].set_ylabel('Liczba predykcji')
+            osie[0,1].tick_params(axis='x', rotation=45)
         
         # 3. Analiza driftu danych
-        if 'data_drift' in monitoring_results:
-            drift = monitoring_results['data_drift']
+        if 'data_drift' in wyniki_monitoringu:
+            drift = wyniki_monitoringu['data_drift']
             if 'mean_drift' in drift:
-                mean_drift = np.array(drift['mean_drift'])
-                axes[1,0].bar(range(len(mean_drift)), mean_drift, alpha=0.7, color='orange')
-                axes[1,0].set_title('Drift Średnich Cech')
-                axes[1,0].set_xlabel('Indeks cechy')
-                axes[1,0].set_ylabel('Wielkość driftu')
-                axes[1,0].axhline(y=self.drift_threshold, color='red', linestyle='--', label='Próg alarmu')
-                axes[1,0].legend()
+                drift_sredniej = np.array(drift['mean_drift'])
+                osie[1,0].bar(range(len(drift_sredniej)), drift_sredniej, alpha=0.7, color='orange')
+                osie[1,0].set_title('Drift Średnich Cech')
+                osie[1,0].set_xlabel('Indeks cechy')
+                osie[1,0].set_ylabel('Wielkość driftu')
+                osie[1,0].axhline(y=self.prog_driftu, color='red', linestyle='--', label='Próg alarmu')
+                osie[1,0].legend()
         
         # 4. Status monitoringu
-        axes[1,1].axis('off')
+        osie[1,1].axis('off')
         
         # Tworzenie tabeli statusu
-        status_data = []
-        if 'performance_drift' in monitoring_results:
-            status_data.append(['Drift Wydajności', 'OK' if not monitoring_results.get('significant_drift', False) else 'WARNING'])
-        if 'data_drift' in monitoring_results:
-            status_data.append(['Drift Danych', 'OK' if not monitoring_results['data_drift']['drift_detected'] else 'WARNING'])
-        if 'hallucination_analysis' in monitoring_results:
-            status_data.append(['Halucynacje', 'OK' if not monitoring_results['hallucination_analysis']['potential_hallucination'] else 'WARNING'])
+        dane_statusu = []
+        if 'performance_drift' in wyniki_monitoringu:
+            dane_statusu.append(['Drift Wydajności', 'OK' if not wyniki_monitoringu.get('significant_drift', False) else 'OSTRZEŻENIE'])
+        if 'data_drift' in wyniki_monitoringu:
+            dane_statusu.append(['Drift Danych', 'OK' if not wyniki_monitoringu['data_drift']['drift_detected'] else 'OSTRZEŻENIE'])
+        if 'hallucination_analysis' in wyniki_monitoringu:
+            dane_statusu.append(['Halucynacje', 'OK' if not wyniki_monitoringu['hallucination_analysis']['potential_hallucination'] else 'OSTRZEŻENIE'])
         
-        if status_data:
-            table = axes[1,1].table(cellText=status_data, 
+        if dane_statusu:
+            tabela = osie[1,1].table(cellText=dane_statusu, 
                                   colLabels=['Komponent', 'Status'],
                                   cellLoc='center', loc='center')
-            table.auto_set_font_size(False)
-            table.set_fontsize(12)
-            table.scale(1.2, 1.5)
+            tabela.auto_set_font_size(False)
+            tabela.set_fontsize(12)
+            tabela.scale(1.2, 1.5)
         
-        axes[1,1].set_title('Status Monitoringu')
+        osie[1,1].set_title('Status Monitoringu')
         
         plt.tight_layout()
         plt.savefig('results/plots/monitoring_dashboard.png', dpi=300, bbox_inches='tight')
@@ -301,9 +291,8 @@ class ModelMonitor:
         
         logger.info("Zapisano dashboard monitoringu")
     
-    def monitor_model(self, X_test: np.ndarray, y_test: np.ndarray, 
+    def monitoruj_model(self, X_test: np.ndarray, y_test: np.ndarray, 
                      X_baseline: Optional[np.ndarray] = None) -> Dict[str, Any]:
-        """Główna metoda monitoringu modelu"""
         logger.info("=== ROZPOCZĘCIE MONITORINGU MODELU ===")
         
         # Predykcje
@@ -311,79 +300,78 @@ class ModelMonitor:
         y_pred_proba = self.model.predict_proba(X_test)[:, 1]
         
         # Obliczenie metryk
-        current_metrics = self.calculate_model_metrics(y_test, y_pred, y_pred_proba)
+        aktualne_metryki = self.oblicz_metryki_modelu(y_test, y_pred, y_pred_proba)
         
-        monitoring_results = {
-            'model_name': self.model_name,
+        wyniki_monitoringu = {
+            'model_name': self.nazwa_modelu,
             'timestamp': datetime.now().isoformat(),
-            'current_metrics': current_metrics
+            'current_metrics': aktualne_metryki
         }
         
         # Wykrywanie driftu danych
         if X_baseline is not None:
-            data_drift = self.detect_data_drift(X_test, X_baseline)
-            monitoring_results['data_drift'] = data_drift
+            drift_danych = self.wykryj_drift_danych(X_test, X_baseline)
+            wyniki_monitoringu['data_drift'] = drift_danych
         
         # Wykrywanie driftu wydajności
-        performance_drift = self.detect_performance_drift(current_metrics)
-        monitoring_results['performance_drift'] = performance_drift
+        drift_wydajnosci = self.wykryj_drift_wydajnosci(aktualne_metryki)
+        wyniki_monitoringu['performance_drift'] = drift_wydajnosci
         
         # Wykrywanie halucynacji
-        hallucination_analysis = self.detect_hallucination_patterns(y_pred_proba)
-        monitoring_results['hallucination_analysis'] = hallucination_analysis
+        analiza_halucynacji = self.wykryj_wzorce_halucynacji(y_pred_proba)
+        wyniki_monitoringu['hallucination_analysis'] = analiza_halucynacji
         
         # Analiza spójności
-        consistency_analysis = self.analyze_prediction_consistency(X_test, y_pred, y_pred_proba)
-        monitoring_results['consistency_analysis'] = consistency_analysis
+        analiza_spojnosci = self.analizuj_spojnosc_predykcji(X_test, y_pred, y_pred_proba)
+        wyniki_monitoringu['consistency_analysis'] = analiza_spojnosci
         
         # Aktualizacja historii
-        self.monitoring_history.append(monitoring_results)
+        self.historia_monitoringu.append(wyniki_monitoringu)
         
         # Tworzenie dashboardu
-        self.create_monitoring_dashboard(monitoring_results)
+        self.utworz_dashboard_monitoringu(wyniki_monitoringu)
         
         # Zapisanie wyników
-        self.save_monitoring_results(monitoring_results)
+        self.zapisz_wyniki_monitoringu(wyniki_monitoringu)
         
         logger.info("=== ZAKOŃCZENIE MONITORINGU MODELU ===")
-        return monitoring_results
+        return wyniki_monitoringu
     
-    def save_monitoring_results(self, results: Dict[str, Any]) -> None:
-        """Zapisanie wyników monitoringu"""
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    def zapisz_wyniki_monitoringu(self, wyniki: Dict[str, Any]) -> None:
+        znacznik_czasu = datetime.now().strftime("%Y%m%d_%H%M%S")
         
         # Zapisanie JSON
-        results_path = Path('results/monitoring') / f'monitoring_results_{timestamp}.json'
-        results_path.parent.mkdir(parents=True, exist_ok=True)
+        sciezka_wynikow = Path('results/monitoring') / f'monitoring_results_{znacznik_czasu}.json'
+        sciezka_wynikow.parent.mkdir(parents=True, exist_ok=True)
         
-        with open(results_path, 'w', encoding='utf-8') as f:
-            json.dump(results, f, indent=2, ensure_ascii=False, default=str)
+        with open(sciezka_wynikow, 'w', encoding='utf-8') as plik:
+            json.dump(wyniki, plik, indent=2, ensure_ascii=False, default=str)
         
         # Zapisanie raportu tekstowego
-        report_path = Path('results/monitoring') / f'monitoring_report_{timestamp}.txt'
-        with open(report_path, 'w', encoding='utf-8') as f:
-            f.write(f"=== RAPORT MONITORINGU MODELU - {self.model_name} ===\n")
-            f.write(f"Data: {results['timestamp']}\n\n")
+        sciezka_raportu = Path('results/monitoring') / f'monitoring_report_{znacznik_czasu}.txt'
+        with open(sciezka_raportu, 'w', encoding='utf-8') as plik:
+            plik.write(f"=== RAPORT MONITORINGU MODELU - {self.nazwa_modelu} ===\n")
+            plik.write(f"Data: {wyniki['timestamp']}\n\n")
             
             # Metryki wydajności
-            f.write("=== METRYKI WYDAJNOŚCI ===\n")
-            for metric, value in results['current_metrics'].items():
-                if metric != 'timestamp':
-                    f.write(f"{metric}: {value:.4f}\n")
+            plik.write("=== METRYKI WYDAJNOŚCI ===\n")
+            for metryka, wartosc in wyniki['current_metrics'].items():
+                if metryka != 'timestamp':
+                    plik.write(f"{metryka}: {wartosc:.4f}\n")
             
             # Status komponentów
-            f.write("\n=== STATUS KOMPONENTÓW ===\n")
-            if 'data_drift' in results:
-                f.write(f"Drift danych: {'WYKRYTO' if results['data_drift']['drift_detected'] else 'BRAK'}\n")
-            if 'performance_drift' in results:
-                f.write(f"Drift wydajności: {'WYKRYTO' if results.get('significant_drift', False) else 'BRAK'}\n")
-            if 'hallucination_analysis' in results:
-                f.write(f"Halucynacje: {'WYKRYTO' if results['hallucination_analysis']['potential_hallucination'] else 'BRAK'}\n")
+            plik.write("\n=== STATUS KOMPONENTÓW ===\n")
+            if 'data_drift' in wyniki:
+                plik.write(f"Drift danych: {'WYKRYTO' if wyniki['data_drift']['drift_detected'] else 'BRAK'}\n")
+            if 'performance_drift' in wyniki:
+                plik.write(f"Drift wydajności: {'WYKRYTO' if wyniki.get('significant_drift', False) else 'BRAK'}\n")
+            if 'hallucination_analysis' in wyniki:
+                plik.write(f"Halucynacje: {'WYKRYTO' if wyniki['hallucination_analysis']['potential_hallucination'] else 'BRAK'}\n")
         
-        logger.info(f"Zapisano wyniki monitoringu w: {results_path}")
+        logger.info(f"Zapisano wyniki monitoringu w: {sciezka_wynikow}")
 
 if __name__ == "__main__":
     # Przykład użycia
-    # monitor = ModelMonitor(model, "StrokePredictor")
-    # results = monitor.monitor_model(X_test, y_test, X_baseline)
+    # monitor = MonitorModelu(model, "StrokePredictor")
+    # wyniki = monitor.monitoruj_model(X_test, y_test, X_baseline)
     pass

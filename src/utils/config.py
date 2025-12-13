@@ -3,35 +3,31 @@
 import yaml
 import logging
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, cast
 
 logger = logging.getLogger(__name__)
 
 class ConfigManager:
-    """Manager konfiguracji systemu"""
     
-    def __init__(self, config_path: str = "config/config.yaml"):
-        """Inicjalizacja managera konfiguracji"""
-        self.config_path = Path(config_path)
-        self.config = self._load_config()
+    def __init__(self, sciezka_konfiguracji: str = "config/config.yaml"):
+        self.sciezka_konfiguracji = Path(sciezka_konfiguracji)
+        self.konfiguracja = self._zaladuj_konfiguracje()
     
-    def _load_config(self) -> Dict[str, Any]:
-        """Ładowanie konfiguracji z pliku YAML"""
-        if self.config_path.exists():
+    def _zaladuj_konfiguracje(self) -> Dict[str, Any]:
+        if self.sciezka_konfiguracji.exists():
             try:
-                with open(self.config_path, 'r', encoding='utf-8') as f:
-                    config = yaml.safe_load(f)
-                logger.info(f"Zaaladowano konfigurację z: {self.config_path}")
-                return config
+                with open(self.sciezka_konfiguracji, 'r', encoding='utf-8') as plik:
+                    konfiguracja = yaml.safe_load(plik)
+                logger.info(f"Zaaladowano konfigurację z: {self.sciezka_konfiguracji}")
+                return konfiguracja
             except Exception as e:
                 logger.error(f"Błąd ładowania konfiguracji: {e}")
-                return self._get_default_config()
+                return self._pobierz_domyslna_konfiguracje()
         else:
-            logger.warning(f"Plik konfiguracji {self.config_path} nie istnieje, używanie domyślnej konfiguracji")
-            return self._get_default_config()
+            logger.warning(f"Plik konfiguracji {self.sciezka_konfiguracji} nie istnieje, używanie domyślnej konfiguracji")
+            return self._pobierz_domyslna_konfiguracje()
     
-    def _get_default_config(self) -> Dict[str, Any]:
-        """Domyślna konfiguracja systemu"""
+    def _pobierz_domyslna_konfiguracje(self) -> Dict[str, Any]:
         return {
             'preprocessing': {
                 'test_size': 0.2,
@@ -61,30 +57,25 @@ class ConfigManager:
             }
         }
     
-    def get(self, key: str, default=None):
-        """Pobieranie wartości z konfiguracji"""
-        keys = key.split('.')
-        value = self.config
+    def pobierz(self, klucz: str, domyslna=None):
+        klucze = klucz.split('.')
+        wartosc = self.konfiguracja
         
         try:
-            for k in keys:
-                value = value[k]
-            return value
+            for k in klucze:
+                wartosc = wartosc[k]
+            return wartosc
         except (KeyError, TypeError):
-            return default
+            return domyslna
     
-    def get_preprocessing_config(self) -> Dict[str, Any]:
-        """Pobieranie konfiguracji preprocessingu"""
-        return self.get('preprocessing', {})
+    def pobierz_konfiguracje_preprocessingu(self) -> Dict[str, Any]:
+        return cast(Dict[str, Any], self.pobierz('preprocessing', {}))
     
-    def get_models_config(self) -> Dict[str, Any]:
-        """Pobieranie konfiguracji modeli"""
-        return self.get('models', {})
+    def pobierz_konfiguracje_modeli(self) -> Dict[str, Any]:
+        return cast(Dict[str, Any], self.pobierz('models', {}))
     
-    def get_monitoring_config(self) -> Dict[str, Any]:
-        """Pobieranie konfiguracji monitoringu"""
-        return self.get('monitoring', {})
+    def pobierz_konfiguracje_monitoringu(self) -> Dict[str, Any]:
+        return cast(Dict[str, Any], self.pobierz('monitoring', {}))
     
-    def get_data_quality_config(self) -> Dict[str, Any]:
-        """Pobieranie konfiguracji jakości danych"""
-        return self.get('data_quality', {})
+    def pobierz_konfiguracje_jakosci_danych(self) -> Dict[str, Any]:
+        return cast(Dict[str, Any], self.pobierz('data_quality', {}))
